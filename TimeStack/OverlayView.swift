@@ -2,7 +2,6 @@ import SwiftUI
 
 struct OverlayView: View {
     @EnvironmentObject var engine: TimerEngine
-    @EnvironmentObject var overlay: OverlayController
 
     var body: some View {
         VStack(spacing: 8) {
