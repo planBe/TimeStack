@@ -6,12 +6,13 @@ Free, always-on-top transparent overlay timers for macOS. A stacked **countdown*
 
 🚧 **v0.1 — early development.** Spec locked; build in progress.
 
-## Features (planned for v0.1)
+## Features (v0.1)
 
 - ⏱ Stacked **countdown** + **stopwatch** running simultaneously — show either or both
 - 🪟 Always-on-top transparent overlay, works over any windowed app
 - 🖱 Click-through when locked; drag to position when unlocked
 - 📐 Resizable window, adjustable transparency
+- 💾 Window position, target time, opacity, lock state — all persist across launches
 - 🍎 Menu bar control (no dock icon)
 - 🆓 Free and open-source forever (MIT licensed)
 - 🪶 Lean: no dependencies, pure SwiftUI + AppKit
@@ -24,7 +25,6 @@ Free, always-on-top transparent overlay timers for macOS. A stacked **countdown*
 ## Roadmap (post-v0.1)
 
 - Sound on countdown-zero (optional)
-- Window position memory across launches
 - Multi-monitor — show on the screen where the trigger came from
 - Fullscreen-app support (Spaces handling; v0.1 supports windowed apps only)
 - Mac App Store distribution
