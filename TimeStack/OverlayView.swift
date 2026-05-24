@@ -5,7 +5,7 @@ struct OverlayView: View {
     @EnvironmentObject var overlay: OverlayController
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
+        ZStack(alignment: .topLeading) {
             VStack(spacing: 8) {
                 if engine.countdownVisible {
                     TimerPanel(
@@ -31,7 +31,8 @@ struct OverlayView: View {
                         tint: engine.stopwatchColor,
                         precision: engine.precision,
                         showCloseButton: !overlay.isLocked,
-                        onClose: { engine.stopwatchVisible = false }
+                        onClose: { engine.stopwatchVisible = false },
+                        timeView: stopwatchTimeView
                     )
                 }
                 if !engine.countdownVisible && !engine.stopwatchVisible {
@@ -39,6 +40,7 @@ struct OverlayView: View {
                 }
             }
             .padding(10)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -48,6 +50,20 @@ struct OverlayView: View {
 
             lockIndicator
                 .padding(12)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Stopwatch panel's time-area override: shows the big delay digit when a delay-start
+    /// is pending for this timer (alone or via Both); otherwise nil → falls back to TimerPanel's
+    /// default formatted text.
+    private var stopwatchTimeView: AnyView? {
+        guard let delay = engine.delayRemaining else { return nil }
+        switch engine.pendingAction {
+        case .stopwatch, .both:
+            return AnyView(DelayDisplayView(value: delay, tint: engine.stopwatchColor))
+        default:
+            return nil
         }
     }
 
@@ -99,7 +115,9 @@ private struct EditableCountdownView: View {
 
     var body: some View {
         Group {
-            if isEditing {
+            if let delay = engine.delayRemaining, isCountdownPending {
+                DelayDisplayView(value: delay, tint: engine.countdownColor)
+            } else if isEditing {
                 TextField("MM:SS", text: $editText)
                     .textFieldStyle(.plain)
                     .focused($fieldFocused)
@@ -125,8 +143,12 @@ private struct EditableCountdownView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    private var isCountdownPending: Bool {
+        engine.pendingAction == .countdown || engine.pendingAction == .both
+    }
+
     private func beginEditing() {
-        guard !engine.countdownRunning, !overlay.isLocked else { return }
+        guard !engine.countdownRunning, !overlay.isLocked, engine.delayRemaining == nil else { return }
         editText = formatForEditing(engine.countdownTarget)
         isEditing = true
     }
@@ -159,5 +181,21 @@ private struct EditableCountdownView: View {
             return TimeInterval(m * 60)
         }
         return nil
+    }
+}
+
+// MARK: - Delay-start big-digit display (3, 2, 1, GO)
+
+fileprivate struct DelayDisplayView: View {
+    let value: Int
+    let tint: Color
+
+    var body: some View {
+        Text("\(value)")
+            .font(.system(size: 44, weight: .semibold, design: .rounded))
+            .foregroundStyle(tint)
+            .monospacedDigit()
+            .frame(maxWidth: .infinity, alignment: .center)
+            .transition(.opacity)
     }
 }

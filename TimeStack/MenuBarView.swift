@@ -39,7 +39,7 @@ struct MenuBarView: View {
                     .font(.system(.body, design: .monospaced))
                     .frame(width: 100, alignment: .leading)
                 Spacer()
-                Button(engine.countdownRunning ? "Pause" : "Start") {
+                Button(countdownActionLabel) {
                     if engine.countdownRunning {
                         engine.stopCountdown()
                     } else {
@@ -85,7 +85,7 @@ struct MenuBarView: View {
                     .font(.system(.body, design: .monospaced))
                     .frame(width: 100, alignment: .leading)
                 Spacer()
-                Button(engine.stopwatchRunning ? "Pause" : "Start") {
+                Button(stopwatchActionLabel) {
                     if engine.stopwatchRunning {
                         engine.stopStopwatch()
                     } else {
@@ -103,7 +103,7 @@ struct MenuBarView: View {
 
     private var bothSection: some View {
         HStack {
-            Button("Start Both") { engine.startBoth() }
+            Button(bothActionLabel) { engine.startBoth() }
             Button("Stop Both") { engine.stopBoth() }
             Button("Reset Both") { engine.resetBoth() }
         }
@@ -146,6 +146,23 @@ struct MenuBarView: View {
                 .labelsHidden()
                 .pickerStyle(.menu)
                 .frame(width: 130)
+            }
+            .padding(.horizontal, 12)
+            .padding(.bottom, 4)
+            .font(.caption)
+
+            HStack {
+                Text("Start delay")
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Stepper(
+                    value: $engine.delaySeconds,
+                    in: 0...10
+                ) {
+                    Text(engine.delaySeconds == 0 ? "Off" : "\(engine.delaySeconds) sec")
+                        .frame(width: 64, alignment: .trailing)
+                        .monospacedDigit()
+                }
             }
             .padding(.horizontal, 12)
             .padding(.bottom, 8)
@@ -197,6 +214,28 @@ struct MenuBarView: View {
             .padding(.bottom, 8)
             .font(.caption)
         }
+    }
+
+    // MARK: - Delay-aware button labels
+
+    private var countdownActionLabel: String {
+        if engine.delayRemaining != nil,
+           engine.pendingAction == .countdown || engine.pendingAction == .both {
+            return "Cancel"
+        }
+        return engine.countdownRunning ? "Pause" : "Start"
+    }
+
+    private var stopwatchActionLabel: String {
+        if engine.delayRemaining != nil,
+           engine.pendingAction == .stopwatch || engine.pendingAction == .both {
+            return "Cancel"
+        }
+        return engine.stopwatchRunning ? "Pause" : "Start"
+    }
+
+    private var bothActionLabel: String {
+        engine.delayRemaining != nil && engine.pendingAction == .both ? "Cancel" : "Start Both"
     }
 
     // MARK: - Helpers

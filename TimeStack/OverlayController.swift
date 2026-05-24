@@ -68,8 +68,13 @@ final class OverlayController: NSObject, ObservableObject, NSWindowDelegate {
         panel.alphaValue = alpha
         panel.minSize = NSSize(width: 160, height: 100)
 
-        let hosting = NSHostingView(rootView: AnyView(content()))
-        panel.contentView = hosting
+        // NSHostingController owns the SwiftUI ↔ AppKit layout glue end-to-end,
+        // avoiding the NSPanel ↔ NSHostingView constraint-update loop that
+        // AppKit aborts when SwiftUI content shrinks (e.g. hiding a timer
+        // via the × button). Apple's preferred pattern for SwiftUI in NSWindow.
+        let hostingController = NSHostingController(rootView: AnyView(content()))
+        panel.contentViewController = hostingController
+        panel.setContentSize(frame.size)
 
         panel.delegate = self
         panel.orderFrontRegardless()

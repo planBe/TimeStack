@@ -38,6 +38,27 @@ final class TimerEngine: ObservableObject {
         didSet { saveSettings() }
     }
 
+    // MARK: - User-configurable state (v0.3)
+
+    /// Seconds of "get ready" countdown before any Start action actually starts the timers.
+    /// 0 = disabled (immediate start, v0.2 behavior). Range 0–10, default 3.
+    @Published var delaySeconds: Int {
+        didSet {
+            delaySeconds = max(0, min(10, delaySeconds))
+            saveSettings()
+        }
+    }
+
+    // MARK: - Transient delay-start state (not persisted)
+
+    enum PendingStartAction { case countdown, stopwatch, both }
+
+    /// Non-nil during the delay-before-start phase. Counts down 3 → 2 → 1, then fires `pendingAction`.
+    @Published private(set) var delayRemaining: Int?
+    @Published private(set) var pendingAction: PendingStartAction?
+
+    private var delayTickTimer: Timer?
+
     // MARK: - Derived display state (read-only externally)
 
     @Published private(set) var countdownRemaining: TimeInterval
@@ -99,17 +120,28 @@ final class TimerEngine: ObservableObject {
         }
         self.soundEnabled = (dict["soundEnabled"] as? Bool) ?? false
         self.countdownEndSound = (dict["countdownEndSound"] as? String) ?? TimerEngine.defaultCountdownEndSound
+        self.delaySeconds = max(0, min(10, (dict["delaySeconds"] as? Int) ?? 3))
 
         startDisplayLoop()
     }
 
     deinit {
         displayTimer?.invalidate()
+        delayTickTimer?.invalidate()
     }
 
     // MARK: - Countdown control
 
     func startCountdown() {
+        if delayRemaining != nil { cancelDelay(); return }
+        if delaySeconds > 0 {
+            beginDelay(for: .countdown)
+        } else {
+            startCountdownNow()
+        }
+    }
+
+    private func startCountdownNow() {
         guard !countdownRunning else { return }
         if countdownPausedRemaining <= 0 {
             countdownPausedRemaining = countdownTarget
@@ -136,6 +168,15 @@ final class TimerEngine: ObservableObject {
     // MARK: - Stopwatch control
 
     func startStopwatch() {
+        if delayRemaining != nil { cancelDelay(); return }
+        if delaySeconds > 0 {
+            beginDelay(for: .stopwatch)
+        } else {
+            startStopwatchNow()
+        }
+    }
+
+    private func startStopwatchNow() {
         guard !stopwatchRunning else { return }
         stopwatchStartedAt = Date()
         stopwatchRunning = true
@@ -158,8 +199,13 @@ final class TimerEngine: ObservableObject {
     // MARK: - Both-at-once convenience
 
     func startBoth() {
-        startCountdown()
-        startStopwatch()
+        if delayRemaining != nil { cancelDelay(); return }
+        if delaySeconds > 0 {
+            beginDelay(for: .both)
+        } else {
+            startCountdownNow()
+            startStopwatchNow()
+        }
     }
 
     func stopBoth() {
@@ -181,6 +227,47 @@ final class TimerEngine: ObservableObject {
     private func playEndSound() {
         guard soundEnabled, countdownEndSound != "None" else { return }
         NSSound(named: countdownEndSound)?.play()
+    }
+
+    // MARK: - Delay-start state machine (v0.3)
+
+    private func beginDelay(for action: PendingStartAction) {
+        cancelDelay()
+        pendingAction = action
+        delayRemaining = delaySeconds
+        delayTickTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.delayTick()
+            }
+        }
+    }
+
+    private func delayTick() {
+        guard let current = delayRemaining else { return }
+        if current <= 1 {
+            let action = pendingAction
+            delayRemaining = nil
+            pendingAction = nil
+            delayTickTimer?.invalidate()
+            delayTickTimer = nil
+            switch action {
+            case .countdown: startCountdownNow()
+            case .stopwatch: startStopwatchNow()
+            case .both:
+                startCountdownNow()
+                startStopwatchNow()
+            case .none: break
+            }
+        } else {
+            delayRemaining = current - 1
+        }
+    }
+
+    private func cancelDelay() {
+        delayRemaining = nil
+        pendingAction = nil
+        delayTickTimer?.invalidate()
+        delayTickTimer = nil
     }
 
     // MARK: - Display loop
@@ -224,6 +311,7 @@ final class TimerEngine: ObservableObject {
             "stopwatchColorHex": stopwatchColor.hexString ?? "",
             "soundEnabled": soundEnabled,
             "countdownEndSound": countdownEndSound,
+            "delaySeconds": delaySeconds,
         ]
         UserDefaults.standard.set(dict, forKey: settingsKey)
     }
