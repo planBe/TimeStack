@@ -1,83 +1,39 @@
-# Xcode Setup Guide
+# TimeStack Setup
 
-The Swift / plist files in `TimeStack/` are the entire app. Here's how to wrap them in an Xcode project that builds.
+This repo ships with both a canonical `project.yml` spec (XcodeGen) and a generated `TimeStack.xcodeproj`. Either works.
 
-## Step 1: Create a new Xcode project
+## Fast path — just open and run
 
-1. Open Xcode → **File → New → Project…**
-2. Choose **macOS → App** → Next
-3. Fill in:
-   - **Product Name:** `TimeStack`
-   - **Team:** Your Apple ID (or "None" for local dev — see "Distribution" below)
-   - **Organization Identifier:** `com.planbecreative` (so the bundle ID becomes `com.planbecreative.TimeStack`)
-   - **Interface:** SwiftUI
-   - **Language:** Swift
-   - **Storage:** None
-   - **Include Tests:** unchecked (optional)
-4. Save it inside this repo at the top level — sibling to `TimeStack/` (the source folder) — so the resulting structure is:
-   ```
-   TimeStack/                       (repo root)
-   ├── LICENSE
-   ├── README.md
-   ├── SETUP.md
-   ├── .gitignore
-   ├── TimeStack.xcodeproj          ← created by Xcode in step 1
-   └── TimeStack/                   ← source folder (already in repo)
-       ├── TimeStackApp.swift
-       ├── TimerEngine.swift
-       ├── ...
-   ```
+```bash
+open TimeStack.xcodeproj
+```
 
-Xcode generates a default project with `TimeStackApp.swift` and `ContentView.swift` inside its own `TimeStack/` group.
+Then ⌘R in Xcode. That's it.
 
-## Step 2: Replace the generated files
+The `TimeStack.xcodeproj` bundle is checked in and ready to build. Minimum: Xcode 15+, macOS 13.0+. App Sandbox is enabled by default; no additional entitlements needed for v0.x.
 
-1. In Xcode's file navigator, **delete** the default `TimeStackApp.swift` and `ContentView.swift` (choose "Move to Trash"). Xcode also created an `Info.plist` and an entitlements file — leave those for now; you'll either point Xcode at the repo's versions in step 3, or use Xcode's defaults.
-2. Drag these files from the repo's `TimeStack/` folder into the `TimeStack` group in Xcode:
-   - `TimeStackApp.swift`
-   - `TimerEngine.swift`
-   - `OverlayController.swift`
-   - `OverlayView.swift`
-   - `TimerPanel.swift`
-   - `MenuBarView.swift`
-   - `TimeFormatter.swift`
-3. When prompted, leave **"Copy items if needed" unchecked** (the files are already in this repo's `TimeStack/` source folder; you want Xcode to reference them, not duplicate). Make sure the `TimeStack` target is selected.
+## Reproducible path — regenerate the project from `project.yml`
 
-## Step 3: Configure the target
+If you've edited `project.yml` (or want to verify the `.xcodeproj` matches the spec), regenerate with:
 
-In the project settings (click the blue project icon at the top of the file navigator):
+```bash
+brew install xcodegen   # one-time
+xcodegen generate
+```
 
-1. Select the **TimeStack** target → **General** tab:
-   - **Minimum Deployments:** macOS **13.0**
-   - **App Category:** Utilities (optional)
+This rewrites `TimeStack.xcodeproj` from `project.yml`. The spec is the canonical source of truth for project settings (bundle ID, target settings, sandbox, INFOPLIST keys, etc.); the `.xcodeproj` is treated as a regenerable artifact and committed for clone-and-run convenience.
 
-2. **Info** tab — add these keys to the auto-generated Info.plist (Xcode will reference its own; copy the values from this repo's `Info.plist` if you'd rather match exactly):
-   - **Application is agent (UIElement)** = `YES` *(hides the dock icon — critical for a menu bar app)*
-   - **Bundle version** = `1`
-   - **Bundle version string, short** = `0.1.0`
-
-3. **Signing & Capabilities** tab:
-   - For local testing, "Sign to Run Locally" is fine.
-   - The default App Sandbox capability is okay — no special entitlements needed.
-
-## Step 4: Build and run
-
-⌘R. You should see:
-
-- A clipboard-icon-style **stopwatch** icon appear in your menu bar.
-- A small floating panel with two stacked timer displays (countdown + stopwatch) appear above your other windows. By default both timers show `20:00.0` (countdown) and `00:00.0` (stopwatch).
-
-Click the menu bar icon to open the control surface: start/pause/reset each timer, change the countdown target time, toggle visibility per timer, lock click-through, adjust opacity.
-
-## If something goes wrong
-
-- **No floating panel appears:** check Console.app for "TimeStack" messages. If the panel was created but isn't visible, it may have a saved frame off-screen — delete `TimeStack.overlay.v1` from defaults to reset (in Terminal: `defaults delete <bundle-id>`).
-- **Panel doesn't stay above Minecraft:** v0.1 supports Minecraft with the Fullscreen toggle **OFF** (Options → Video Settings → Fullscreen). Fullscreen-Spaces support is on the v0.2+ roadmap.
-- **Click-through doesn't work after locking:** sanity check that "Lock (click-through)" toggle in the menu bar is actually on. When locked, you cannot drag the panel — that's intentional. Unlock to reposition.
-- **Settings (target, opacity, lock) don't persist across launches:** sandbox UserDefaults issue. Check Console.app for write failures.
+For the family-wide rationale on XcodeGen adoption, see KaizenUBA `DECISIONS.md` D-026.
 
 ## Distribution
 
-- **Local dev:** "Sign to Run Locally" is fine; no Apple Developer Program membership required.
-- **Mac App Store:** Apple Developer Program membership required ($99/year). The Sandbox capability is already set; no other entitlements needed for v0.1.
-- **Notarized release builds (GitHub Releases):** requires Developer ID Application certificate + Apple's Notarization service. Out of scope for v0.1; on the roadmap.
+- **Local dev:** "Sign to Run Locally" or your personal team. App runs in the sandbox; nothing additional needed.
+- **Mac App Store:** Apple Developer Program membership required ($99/year). Team in `project.yml` is set to `X22WKZG6P4` (Michael Wild); contributors should override locally via Xcode signing UI.
+- **Notarized GitHub Release:** Developer ID Application certificate + notarization. Follows the same flow as ClipStack's v1.0 release (see KaizenUBA `OPERATIONS.md` runbook 2026-05-21 for Xcode 16 ITMS-prevention checklist — already baked into `project.yml`).
+
+## If something goes wrong
+
+- **Floating panel doesn't appear:** off-screen saved frame protection (v0.2+) should center it on main screen. If you're on v0.1 or older and it doesn't appear, delete defaults with: `defaults delete com.planbecreative.TimeStack` and relaunch.
+- **Panel doesn't stay above Minecraft:** v0.1+ supports Minecraft with the Fullscreen toggle **OFF** (Options → Video Settings → Fullscreen). Fullscreen-Spaces support is roadmap.
+- **Click-through doesn't work after locking:** sanity check that the lock indicator in the overlay's top-right corner shows the closed-padlock state. When locked, you cannot drag the panel or click controls on it — that's intentional. Unlock via the menu bar Display section ("Lock (click-through)" toggle).
+- **Build fails on `@Published` / `ObservableObject` errors:** Xcode 16's stricter module visibility (`SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES`) requires explicit `import Combine` alongside `import SwiftUI` in files that conform to `ObservableObject`. This should already be done in current source.

@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 
 @main
@@ -21,9 +22,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let engine = self.engine
+        let overlay = self.overlay
         overlay.showOverlay {
             OverlayView()
                 .environmentObject(engine)
+                .environmentObject(overlay)
         }
     }
 }

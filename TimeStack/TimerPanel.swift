@@ -5,6 +5,10 @@ struct TimerPanel: View {
     let time: TimeInterval
     let isRunning: Bool
     let tint: Color
+    let precision: Int
+    var showCloseButton: Bool = false
+    var onClose: (() -> Void)? = nil
+    var timeView: AnyView? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -17,14 +21,27 @@ struct TimerPanel: View {
                     .foregroundStyle(.secondary)
                     .tracking(0.5)
                 Spacer()
+                if showCloseButton, let onClose {
+                    Button(action: onClose) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.secondary.opacity(0.7))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Hide \(label.lowercased())")
+                }
             }
-            Text(TimeFormatter.format(time, showsTenths: true))
-                .font(.system(size: 36, weight: .medium, design: .monospaced))
-                .foregroundStyle(tint)
-                .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(0.5)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            if let timeView {
+                timeView
+            } else {
+                Text(TimeFormatter.format(time, precision: precision))
+                    .font(.system(size: 36, weight: .medium, design: .monospaced))
+                    .foregroundStyle(tint)
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)

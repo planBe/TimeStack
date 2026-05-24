@@ -14,6 +14,10 @@ struct MenuBarView: View {
             Divider()
             displaySection
             Divider()
+            styleSection
+            Divider()
+            soundSection
+            Divider()
 
             Button("Quit TimeStack") {
                 NSApplication.shared.terminate(nil)
@@ -31,9 +35,9 @@ struct MenuBarView: View {
         VStack(alignment: .leading, spacing: 4) {
             sectionHeader("Countdown")
             HStack {
-                Text(TimeFormatter.format(engine.countdownRemaining))
+                Text(TimeFormatter.format(engine.countdownRemaining, precision: engine.precision))
                     .font(.system(.body, design: .monospaced))
-                    .frame(width: 88, alignment: .leading)
+                    .frame(width: 100, alignment: .leading)
                 Spacer()
                 Button(engine.countdownRunning ? "Pause" : "Start") {
                     if engine.countdownRunning {
@@ -77,9 +81,9 @@ struct MenuBarView: View {
         VStack(alignment: .leading, spacing: 4) {
             sectionHeader("Stopwatch")
             HStack {
-                Text(TimeFormatter.format(engine.stopwatchElapsed))
+                Text(TimeFormatter.format(engine.stopwatchElapsed, precision: engine.precision))
                     .font(.system(.body, design: .monospaced))
-                    .frame(width: 88, alignment: .leading)
+                    .frame(width: 100, alignment: .leading)
                 Spacer()
                 Button(engine.stopwatchRunning ? "Pause" : "Start") {
                     if engine.stopwatchRunning {
@@ -125,6 +129,69 @@ struct MenuBarView: View {
                 Text("Opacity")
                     .foregroundStyle(.secondary)
                 Slider(value: $overlay.alpha, in: 0.2...1.0)
+            }
+            .padding(.horizontal, 12)
+            .padding(.bottom, 4)
+            .font(.caption)
+
+            HStack {
+                Text("Precision")
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Picker("", selection: $engine.precision) {
+                    Text("Seconds").tag(0)
+                    Text("Tenths").tag(1)
+                    Text("Hundredths").tag(2)
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .frame(width: 130)
+            }
+            .padding(.horizontal, 12)
+            .padding(.bottom, 8)
+            .font(.caption)
+        }
+    }
+
+    // MARK: - Style
+
+    private var styleSection: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            sectionHeader("Style")
+            ColorPicker("Countdown color", selection: $engine.countdownColor, supportsOpacity: false)
+                .padding(.horizontal, 12)
+                .font(.caption)
+            ColorPicker("Stopwatch color", selection: $engine.stopwatchColor, supportsOpacity: false)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
+                .font(.caption)
+        }
+    }
+
+    // MARK: - Sound
+
+    private var soundSection: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            sectionHeader("Sound")
+            Toggle("Play sound at countdown 0", isOn: $engine.soundEnabled)
+                .padding(.horizontal, 12)
+                .font(.caption)
+
+            HStack {
+                Picker("", selection: $engine.countdownEndSound) {
+                    Text("None").tag("None")
+                    ForEach(TimerEngine.availableSystemSounds, id: \.self) { name in
+                        Text(name).tag(name)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .disabled(!engine.soundEnabled)
+
+                Button("Test") {
+                    engine.previewCurrentSound()
+                }
+                .disabled(!engine.soundEnabled || engine.countdownEndSound == "None")
             }
             .padding(.horizontal, 12)
             .padding(.bottom, 8)

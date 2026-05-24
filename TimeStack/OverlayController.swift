@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 
 @MainActor
@@ -42,7 +43,7 @@ final class OverlayController: NSObject, ObservableObject, NSWindowDelegate {
             return
         }
 
-        let frame = loadSavedFrame() ?? CGRect(x: 100, y: 100, width: 220, height: 240)
+        let frame = preferredInitialFrame()
 
         let panel = NSPanel(
             contentRect: frame,
@@ -106,6 +107,30 @@ final class OverlayController: NSObject, ObservableObject, NSWindowDelegate {
               let h = dict["frameH"] as? CGFloat
         else { return nil }
         return CGRect(x: x, y: y, width: w, height: h)
+    }
+
+    /// Returns a saved frame only if it still falls on a connected screen;
+    /// otherwise centers a default-sized panel on the main screen. Handles the
+    /// monitor-unplugged case so the overlay never lands invisibly off-screen.
+    private func preferredInitialFrame() -> CGRect {
+        let defaultSize = CGSize(width: 220, height: 240)
+        if let saved = loadSavedFrame(), isFrameVisible(saved) {
+            return saved
+        }
+        guard let screen = NSScreen.main else {
+            return CGRect(origin: CGPoint(x: 100, y: 100), size: defaultSize)
+        }
+        let visible = screen.visibleFrame
+        return CGRect(
+            x: visible.midX - defaultSize.width / 2,
+            y: visible.midY - defaultSize.height / 2,
+            width: defaultSize.width,
+            height: defaultSize.height
+        )
+    }
+
+    private func isFrameVisible(_ frame: CGRect) -> Bool {
+        NSScreen.screens.contains { $0.visibleFrame.intersects(frame) }
     }
 
     private func saveSettings() {
