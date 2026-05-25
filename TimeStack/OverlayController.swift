@@ -66,15 +66,19 @@ final class OverlayController: NSObject, ObservableObject, NSWindowDelegate {
         // aspect so the aspect-lock + minSize constraints don't fight each
         // other (which causes the window to resolve to a weird in-between
         // size, leaving SwiftUI content partially clipped).
-        let (w, h, minH): (CGFloat, CGFloat, CGFloat) = {
+        // minW/minH sized so the 28pt time-text floor actually fits without
+        // needing SwiftUI's .minimumScaleFactor to shrink it. Width follows
+        // the aspect to keep minSize consistent with aspectRatio (otherwise
+        // they fight and the window resolves to an in-between shape).
+        let (w, h, minW, minH): (CGFloat, CGFloat, CGFloat, CGFloat) = {
             switch visibleCount {
-            case 2: return (8, 5, 125)
-            case 1: return (8, 3, 75)
-            default: return (8, 2, 50)
+            case 2: return (8, 5, 260, 160)
+            case 1: return (8, 3, 240, 90)
+            default: return (8, 3, 240, 90)  // empty state matches 1-card size
             }
         }()
         let aspect = NSSize(width: w, height: h)
-        let minSize = NSSize(width: 200, height: minH)
+        let minSize = NSSize(width: minW, height: minH)
         let maxSize = NSSize(width: 1440, height: 1440 * h / w)
 
         window.minSize = minSize
@@ -167,12 +171,11 @@ final class OverlayController: NSObject, ObservableObject, NSWindowDelegate {
         ])
         panel.contentView = container
 
-        // Initial size limits assume both timers visible (8:5 aspect, v0.4
-        // tight). OverlayView's .onAppear calls updateAspectAndSize() which
-        // re-applies the correct aspect/min/max if the saved state has a
-        // timer hidden. Fonts scale with window dimensions via SwiftUI's
-        // GeometryReader + timerFontSize environment.
-        let minSize = NSSize(width: 200, height: 125)
+        // Initial size limits assume both timers visible (8:5 aspect). Sized
+        // so the 28pt time-text floor fits cleanly. OverlayView's .onAppear
+        // calls updateAspectAndSize() which re-applies the correct aspect/
+        // min/max if the saved state has a timer hidden.
+        let minSize = NSSize(width: 260, height: 160)
         let maxSize = NSSize(width: 1440, height: 900)
         panel.minSize = minSize
         panel.maxSize = maxSize

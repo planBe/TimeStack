@@ -17,11 +17,15 @@ struct OverlayView: View {
             let widthBudget = max(0, geo.size.width - outerChrome - 28) / 4.2
             let cardHeight = max(0, (geo.size.height - outerChrome - 10 * CGFloat(visibleCount - 1)) / CGFloat(visibleCount))
             // Card chrome (post v0.4-tight): TimerPanel .padding(.vertical, 4)
-            // × 2 + header (~14pt) + spacing (~2pt) = ~24pt. Text fills the
-            // remainder ~1:1 with font size (no extra line-height multiplier
-            // since text is fixed at 1 line via lineLimit).
-            let heightBudget = max(0, cardHeight - 24)
-            let fontSize = max(16, min(widthBudget, heightBudget))
+            // × 2 + header (~14pt) + spacing (~2pt) = ~24pt. Divide by 1.2
+            // to account for monospaced text's intrinsic line-height — without
+            // this multiplier, SwiftUI's .minimumScaleFactor kicks in to
+            // shrink the displayed text below the nominal font size.
+            let heightBudget = max(0, cardHeight - 24) / 1.2
+            // Floor at 28pt: at small windows the time stays glance-readable
+            // and the proportion against the fixed 11pt header reads as a
+            // clear hierarchy (2.5:1) instead of looking broken.
+            let fontSize = max(28, min(widthBudget, heightBudget))
             contentBody
                 .environment(\.timerFontSize, fontSize)
                 .onAppear { syncWindowAspect() }
@@ -122,17 +126,14 @@ struct OverlayView: View {
     private var emptyState: some View {
         VStack(spacing: 4) {
             Image(systemName: "stopwatch")
-                .font(.title3)
+                .font(.body)
                 .foregroundStyle(.secondary)
             Text("Both timers hidden")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Text("Toggle from the menu bar")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
         }
-        .padding(.vertical, 16)
-        .padding(.horizontal, 24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.vertical, 8)
     }
 }
 
