@@ -26,38 +26,74 @@ final class OverlayController: NSObject, ObservableObject, NSWindowDelegate {
         isLocked.toggle()
     }
 
-    /// Adjusts the panel's aspect ratio and animates a resize when the user
-    /// hides/shows timers. Width stays put; height is recomputed from the
-    /// new aspect. Top-anchored (origin.y compensates) so the window doesn't
-    /// visually jump down on shrink. Called from OverlayView on visibility
-    /// changes.
+    /// Wipes persisted window state and restores alpha + lock + frame to
+    /// factory defaults. Re-centers the window on the main screen.
+    func resetToDefaults() {
+        UserDefaults.standard.removeObject(forKey: settingsKey)
+
+        alpha = 0.9
+        isLocked = false
+
+        if let window {
+            let defaultSize = CGSize(width: 320, height: 280)
+            let frame: CGRect = {
+                guard let screen = NSScreen.main else {
+                    return CGRect(origin: CGPoint(x: 100, y: 100), size: defaultSize)
+                }
+                let visible = screen.visibleFrame
+                return CGRect(
+                    x: visible.midX - defaultSize.width / 2,
+                    y: visible.midY - defaultSize.height / 2,
+                    width: defaultSize.width,
+                    height: defaultSize.height
+                )
+            }()
+            window.setFrame(frame, display: true, animate: true)
+            positionLockWindow()
+        }
+    }
+
+    /// Adjusts the panel's aspect ratio AND min/max bounds when the user
+    /// hides/shows timers, then resizes the window non-animated to match
+    /// the new aspect. Width stays put; height is recomputed; top edge is
+    /// anchored (origin.y compensates) so the window doesn't visually jump
+    /// down on shrink. Called from OverlayView on visibility changes.
     func updateAspectAndSize(for visibleCount: Int) {
         guard let window else { return }
 
-        // Aspect tuned to fit visible cards comfortably:
-        //   2 cards: 8:7  (current default — slightly taller than wide)
-        //   1 card:  8:4 (2:1 — wider than tall, single card)
-        //   0 cards: 8:3 (empty state, short)
-        let (w, h): (CGFloat, CGFloat) = {
+        // Aspect tuned to v0.4-tight card chrome (TimerPanel vertical padding
+        // 4pt + ~16pt header/spacing per card). minSize follows the same
+        // aspect so the aspect-lock + minSize constraints don't fight each
+        // other (which causes the window to resolve to a weird in-between
+        // size, leaving SwiftUI content partially clipped).
+        let (w, h, minH): (CGFloat, CGFloat, CGFloat) = {
             switch visibleCount {
-            case 2: return (8, 7)
-            case 1: return (8, 4)
-            default: return (8, 3)
+            case 2: return (8, 5, 125)
+            case 1: return (8, 3, 75)
+            default: return (8, 2, 50)
             }
         }()
         let aspect = NSSize(width: w, height: h)
+        let minSize = NSSize(width: 200, height: minH)
+        let maxSize = NSSize(width: 1440, height: 1440 * h / w)
+
+        window.minSize = minSize
+        window.maxSize = maxSize
+        window.contentMinSize = minSize
+        window.contentMaxSize = maxSize
         window.aspectRatio = aspect
         window.contentAspectRatio = aspect
 
         // Resize: keep current width, derive new height from aspect, anchor
-        // top edge (NSWindow origin is bottom-left so origin.y adjusts).
+        // top edge. animate: false to avoid mid-animation GeometryReader
+        // race conditions that left content stranded above the visible area.
         var frame = window.frame
-        let newHeight = frame.size.width * h / w
+        let newHeight = max(minH, frame.size.width * h / w)
         let deltaHeight = frame.size.height - newHeight
         guard abs(deltaHeight) > 0.5 else { return }
         frame.size.height = newHeight
         frame.origin.y += deltaHeight
-        window.setFrame(frame, display: true, animate: true)
+        window.setFrame(frame, display: true, animate: false)
         positionLockWindow()
     }
 
@@ -87,6 +123,12 @@ final class OverlayController: NSObject, ObservableObject, NSWindowDelegate {
 
         let frame = preferredInitialFrame()
 
+        // .titled is structurally needed for AppKit to show resize-cursor
+        // hints over the window edges/corners. .borderless suppresses those
+        // hints even with .resizable set, leaving the user unable to find
+        // the resize handles. We hide the title bar visually but keep the
+        // structure. (The harmless NSTitlebarSeparatorView console warning
+        // that this style produces is acceptable cost.)
         let panel = NSPanel(
             contentRect: frame,
             styleMask: [.titled, .resizable, .nonactivatingPanel, .fullSizeContentView],
@@ -125,21 +167,19 @@ final class OverlayController: NSObject, ObservableObject, NSWindowDelegate {
         ])
         panel.contentView = container
 
-        // Wide range — fonts scale with window dimensions via SwiftUI's
-        // GeometryReader + timerFontSize environment, so the user can drag any
-        // direction from compact (text ~16pt) to massive (text ~260pt). Min
-        // is sized so both timers + chrome fit at a readable font; max is 400%
-        // of v0.3's intended cap. Aspect ratio locked at 8:7 (matches the
-        // natural content shape at default sizing) so the user drags one
-        // dimension and the other follows proportionally.
-        let minSize = NSSize(width: 200, height: 180)
-        let maxSize = NSSize(width: 1440, height: 1280)
+        // Initial size limits assume both timers visible (8:5 aspect, v0.4
+        // tight). OverlayView's .onAppear calls updateAspectAndSize() which
+        // re-applies the correct aspect/min/max if the saved state has a
+        // timer hidden. Fonts scale with window dimensions via SwiftUI's
+        // GeometryReader + timerFontSize environment.
+        let minSize = NSSize(width: 200, height: 125)
+        let maxSize = NSSize(width: 1440, height: 900)
         panel.minSize = minSize
         panel.maxSize = maxSize
         panel.contentMinSize = minSize
         panel.contentMaxSize = maxSize
-        panel.contentAspectRatio = NSSize(width: 8, height: 7)
-        panel.aspectRatio = NSSize(width: 8, height: 7)
+        panel.contentAspectRatio = NSSize(width: 8, height: 5)
+        panel.aspectRatio = NSSize(width: 8, height: 5)
 
         // Companion lock-corner window — small always-clickable panel
         // positioned at the main panel's top-left. When the main panel is in

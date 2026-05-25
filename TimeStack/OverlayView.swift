@@ -16,16 +16,24 @@ struct OverlayView: View {
             let outerChrome: CGFloat = 32  // .padding(10) + .padding(6) doubled
             let widthBudget = max(0, geo.size.width - outerChrome - 28) / 4.2
             let cardHeight = max(0, (geo.size.height - outerChrome - 10 * CGFloat(visibleCount - 1)) / CGFloat(visibleCount))
-            let heightBudget = max(0, cardHeight - 30) / 1.4
+            // Card chrome (post v0.4-tight): TimerPanel .padding(.vertical, 4)
+            // × 2 + header (~14pt) + spacing (~2pt) = ~24pt. Text fills the
+            // remainder ~1:1 with font size (no extra line-height multiplier
+            // since text is fixed at 1 line via lineLimit).
+            let heightBudget = max(0, cardHeight - 24)
             let fontSize = max(16, min(widthBudget, heightBudget))
             contentBody
                 .environment(\.timerFontSize, fontSize)
                 .onAppear { syncWindowAspect() }
-                .onChange(of: engine.countdownVisible) { _ in syncWindowAspect() }
-                .onChange(of: engine.stopwatchVisible) { _ in syncWindowAspect() }
         }
     }
 
+    /// Called once on appear to align the window with the saved visibility
+    /// state. Visibility changes thereafter route through the menu's custom
+    /// Binding setters (or × button onClose closures), which resize the
+    /// window BEFORE mutating engine state — eliminating the SwiftUI
+    /// `.onChange` race that left stale GeometryReader dimensions and
+    /// clipped content.
     private func syncWindowAspect() {
         let count = (engine.countdownVisible ? 1 : 0) + (engine.stopwatchVisible ? 1 : 0)
         overlay.updateAspectAndSize(for: count)
@@ -42,7 +50,7 @@ struct OverlayView: View {
                         tint: engine.countdownColor,
                         precision: engine.precision,
                         showCloseButton: !overlay.isLocked,
-                        onClose: { engine.countdownVisible = false },
+                        onClose: { hideCountdown() },
                         timeView: AnyView(
                             EditableCountdownView()
                                 .environmentObject(engine)
@@ -59,7 +67,7 @@ struct OverlayView: View {
                         tint: engine.stopwatchColor,
                         precision: engine.precision,
                         showCloseButton: !overlay.isLocked,
-                        onClose: { engine.stopwatchVisible = false },
+                        onClose: { hideStopwatch() },
                         timeView: stopwatchTimeView
                     )
                     .frame(maxHeight: .infinity)
@@ -80,6 +88,22 @@ struct OverlayView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()
+    }
+
+    /// Resize-first × handlers: window snaps to new aspect/size SYNCHRONOUSLY
+    /// before the engine's @Published visibility flag flips, so SwiftUI's
+    /// GeometryReader reads the new window dimensions on its re-render and
+    /// content lays out correctly. (Reversing the order — mutate then
+    /// resize — leaves GeometryReader reading stale OLD dimensions and
+    /// content gets clipped.)
+    private func hideCountdown() {
+        overlay.updateAspectAndSize(for: engine.stopwatchVisible ? 1 : 0)
+        engine.countdownVisible = false
+    }
+
+    private func hideStopwatch() {
+        overlay.updateAspectAndSize(for: engine.countdownVisible ? 1 : 0)
+        engine.stopwatchVisible = false
     }
 
     /// Stopwatch panel's time-area override: shows the big delay digit when a delay-start

@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		17C6DED4936DC5CA5F8D1202 /* TimerEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6414A94D6AF0B4A0B3BBEA47 /* TimerEngine.swift */; };
+		45341F48EAB829B9327588FA /* ColorWell.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF1BB383CAE3626C33818DD4 /* ColorWell.swift */; };
 		7591CE49DA754C357EBA1C83 /* TimerPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D95E5F2E56C1BEB547DD2F0 /* TimerPanel.swift */; };
 		917EF092C4EDAC1B97E84604 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9683F58628B70D3CA11ED213 /* Assets.xcassets */; };
 		A9F97589DDE8C6B4996B1385 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA9607F9527C6D1BEAFE8B63 /* MenuBarView.swift */; };
@@ -27,6 +28,7 @@
 		A58B632F2D7DEBC513B8C7B3 /* TimeStackApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeStackApp.swift; sourceTree = "<group>"; };
 		DA9607F9527C6D1BEAFE8B63 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
 		EDE9E00FB0F133BFEA016A9F /* OverlayController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayController.swift; sourceTree = "<group>"; };
+		FF1BB383CAE3626C33818DD4 /* ColorWell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorWell.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -42,6 +44,7 @@
 			isa = PBXGroup;
 			children = (
 				9683F58628B70D3CA11ED213 /* Assets.xcassets */,
+				FF1BB383CAE3626C33818DD4 /* ColorWell.swift */,
 				DA9607F9527C6D1BEAFE8B63 /* MenuBarView.swift */,
 				EDE9E00FB0F133BFEA016A9F /* OverlayController.swift */,
 				67F989C76A0A5412079869C0 /* OverlayView.swift */,
@@ -132,6 +135,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				45341F48EAB829B9327588FA /* ColorWell.swift in Sources */,
 				A9F97589DDE8C6B4996B1385 /* MenuBarView.swift in Sources */,
 				AB5506A75B7C5F5EDE5011B0 /* OverlayController.swift in Sources */,
 				C4491BE0532903F1BF4FA44A /* OverlayView.swift in Sources */,

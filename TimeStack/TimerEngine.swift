@@ -83,8 +83,8 @@ final class TimerEngine: ObservableObject {
 
     // MARK: - Defaults
 
-    static let defaultCountdownColor = Color(red: 0.20, green: 0.47, blue: 0.96)  // #3478F6
-    static let defaultStopwatchColor = Color(red: 0.19, green: 0.82, blue: 0.35)  // #30D158
+    static let defaultCountdownColor = Color(red: 0.129, green: 0.129, blue: 0.129)  // #212121
+    static let defaultStopwatchColor = Color(red: 0.580, green: 0.067, blue: 0.000)  // #941100
     static let defaultCountdownEndSound = "Glass"
     /// macOS-bundled NSSound names that are present on every install since 10.6.
     static let availableSystemSounds: [String] = [
@@ -222,6 +222,37 @@ final class TimerEngine: ObservableObject {
 
     func previewCurrentSound() {
         playEndSound()
+    }
+
+    // MARK: - Reset to defaults
+
+    /// Wipes persisted settings and restores all user-configurable state to
+    /// factory defaults. Cancels any in-flight delay/timer. Each @Published
+    /// assignment fires its didSet → saveSettings, so the final dict reflects
+    /// the new defaults.
+    func resetToDefaults() {
+        UserDefaults.standard.removeObject(forKey: settingsKey)
+        UserDefaults.standard.removeObject(forKey: legacyKeyV1)
+
+        cancelDelay()
+        countdownStartedAt = nil
+        countdownRunning = false
+        stopwatchStartedAt = nil
+        stopwatchPausedElapsed = 0
+        stopwatchElapsed = 0
+        stopwatchRunning = false
+
+        countdownTarget = 1200
+        countdownPausedRemaining = 1200
+        countdownRemaining = 1200
+        countdownVisible = true
+        stopwatchVisible = true
+        precision = 1
+        countdownColor = TimerEngine.defaultCountdownColor
+        stopwatchColor = TimerEngine.defaultStopwatchColor
+        soundEnabled = false
+        countdownEndSound = TimerEngine.defaultCountdownEndSound
+        delaySeconds = 3
     }
 
     private func playEndSound() {

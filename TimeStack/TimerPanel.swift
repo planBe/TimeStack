@@ -47,8 +47,19 @@ struct TimerPanel: View {
             }
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .padding(.vertical, 4)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(adaptiveCardBackground, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    /// Card background flips between a light and dark tint based on the text
+    /// color's perceived luminance. Without this, dark user-picked text
+    /// (e.g. #212121) is invisible on a dark card and light text (e.g. system
+    /// yellow) washes out on a light card.
+    private var adaptiveCardBackground: Color {
+        let ns = NSColor(tint).usingColorSpace(.sRGB) ?? NSColor(tint)
+        // ITU-R BT.601 luma weights — perceptual approximation of brightness
+        let luma = 0.299 * ns.redComponent + 0.587 * ns.greenComponent + 0.114 * ns.blueComponent
+        return luma < 0.5 ? Color.white.opacity(0.20) : Color.black.opacity(0.28)
     }
 }

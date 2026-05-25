@@ -21,6 +21,16 @@ struct MenuBarView: View {
             soundSection
             Divider()
 
+            Button("Reset to Defaults…") {
+                confirmResetToDefaults()
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.black.opacity(0.08))
+
+            Divider()
+
             Button("Quit TimeStack") {
                 NSApplication.shared.terminate(nil)
             }
@@ -29,6 +39,23 @@ struct MenuBarView: View {
             .padding(.vertical, 6)
         }
         .frame(width: 280)
+    }
+
+    private func confirmResetToDefaults() {
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.messageText = "Reset TimeStack to defaults?"
+        alert.informativeText = "Your custom colors, window position and size, transparency, sound choice, delay-start, and other preferences will be restored to factory defaults. This action cannot be undone."
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Reset")
+        alert.addButton(withTitle: "Cancel")
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        // Resize window FIRST to both-visible aspect (reset restores both),
+        // then mutate engine + overlay state. Same race-free ordering as the
+        // visibility toggles.
+        overlay.updateAspectAndSize(for: 2)
+        engine.resetToDefaults()
+        overlay.resetToDefaults()
     }
 
     // MARK: - Branding header
@@ -133,6 +160,8 @@ struct MenuBarView: View {
         .font(.caption)
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.black.opacity(0.08))
     }
 
     // MARK: - Display
@@ -140,9 +169,9 @@ struct MenuBarView: View {
     private var displaySection: some View {
         VStack(alignment: .leading, spacing: 4) {
             sectionHeader("Display")
-            Toggle("Show countdown", isOn: $engine.countdownVisible)
+            Toggle("Show countdown", isOn: countdownVisibleBinding)
                 .padding(.horizontal, 12)
-            Toggle("Show stopwatch", isOn: $engine.stopwatchVisible)
+            Toggle("Show stopwatch", isOn: stopwatchVisibleBinding)
                 .padding(.horizontal, 12)
             Toggle("Lock (click-through)", isOn: $overlay.isLocked)
                 .padding(.horizontal, 12)
@@ -152,6 +181,10 @@ struct MenuBarView: View {
                 Text("Opacity")
                     .foregroundStyle(.secondary)
                 Slider(value: $overlay.alpha, in: 0.2...1.0)
+                Text("\(Int(overlay.alpha * 100))%")
+                    .frame(width: 36, alignment: .trailing)
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 12)
             .padding(.bottom, 4)
@@ -202,6 +235,8 @@ struct MenuBarView: View {
             colorRow(label: "Stopwatch color", color: $engine.stopwatchColor)
                 .padding(.bottom, 4)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.black.opacity(0.08))
     }
 
     private func colorRow(label: String, color: Binding<Color>) -> some View {
@@ -246,6 +281,36 @@ struct MenuBarView: View {
         }
     }
 
+    // MARK: - Resize-first visibility bindings
+
+    /// Custom Binding for the "Show countdown" toggle. When toggled, the
+    /// window aspect + size are updated SYNCHRONOUSLY before the engine's
+    /// visibility flag flips, so SwiftUI's next render pass uses the new
+    /// window dimensions and content lays out correctly. (Standard
+    /// `$engine.countdownVisible` would mutate first → SwiftUI re-renders
+    /// against old window size → content clips when window resizes after.)
+    private var countdownVisibleBinding: Binding<Bool> {
+        Binding(
+            get: { engine.countdownVisible },
+            set: { newValue in
+                let count = (newValue ? 1 : 0) + (engine.stopwatchVisible ? 1 : 0)
+                overlay.updateAspectAndSize(for: count)
+                engine.countdownVisible = newValue
+            }
+        )
+    }
+
+    private var stopwatchVisibleBinding: Binding<Bool> {
+        Binding(
+            get: { engine.stopwatchVisible },
+            set: { newValue in
+                let count = (engine.countdownVisible ? 1 : 0) + (newValue ? 1 : 0)
+                overlay.updateAspectAndSize(for: count)
+                engine.stopwatchVisible = newValue
+            }
+        )
+    }
+
     // MARK: - Delay-aware button labels
 
     private var countdownActionLabel: String {
@@ -281,57 +346,3 @@ struct MenuBarView: View {
     }
 }
 
-// MARK: - Color swatch button → opens NSColorPanel
-
-/// A SwiftUI swatch button that opens the system NSColorPanel on tap.
-/// We use NSColorPanel (a real Apple-managed top-level window) instead of
-/// NSColorWell's popover because popovers can't reliably anchor inside a
-/// MenuBarExtra window after app-switching. NSColorPanel handles activation
-/// correctly in all states.
-private struct ColorSwatchButton: View {
-    @Binding var color: Color
-
-    var body: some View {
-        Button {
-            ColorPanelCoordinator.shared.present(initialColor: color) { newColor in
-                color = newColor
-            }
-        } label: {
-            RoundedRectangle(cornerRadius: 5, style: .continuous)
-                .fill(color)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 5, style: .continuous)
-                        .stroke(.secondary.opacity(0.4), lineWidth: 0.5)
-                )
-                .frame(width: 44, height: 22)
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-/// Bridges between transient SwiftUI swatch taps and the long-lived
-/// NSColorPanel.shared singleton. Holds the current color-change callback
-/// so target/action callbacks from NSColorPanel route to the right @Binding.
-@MainActor
-private final class ColorPanelCoordinator: NSObject {
-    static let shared = ColorPanelCoordinator()
-
-    private var onChange: ((Color) -> Void)?
-
-    private override init() { super.init() }
-
-    func present(initialColor: Color, onChange: @escaping (Color) -> Void) {
-        self.onChange = onChange
-        let panel = NSColorPanel.shared
-        panel.color = NSColor(initialColor)
-        panel.showsAlpha = false
-        panel.setTarget(self)
-        panel.setAction(#selector(colorChanged(_:)))
-        NSApp.activate(ignoringOtherApps: true)
-        panel.makeKeyAndOrderFront(nil)
-    }
-
-    @objc private func colorChanged(_ sender: NSColorPanel) {
-        onChange?(Color(sender.color))
-    }
-}
