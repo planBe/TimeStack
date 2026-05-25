@@ -5,8 +5,35 @@ struct OverlayView: View {
     @EnvironmentObject var overlay: OverlayController
 
     var body: some View {
+        GeometryReader { geo in
+            // Font fits BOTH width and height budgets — pick whichever is more
+            // constraining so the timer text always fits the card without
+            // clipping. Width budget: "00:00.0" is 7 chars at monospaced width
+            // ≈ 0.6× the font size, plus card chrome. Height budget: each card
+            // gets ~half the window height (minus chrome), and text is ~55%
+            // of card height after the header.
+            let visibleCount = max(1, (engine.countdownVisible ? 1 : 0) + (engine.stopwatchVisible ? 1 : 0))
+            let outerChrome: CGFloat = 32  // .padding(10) + .padding(6) doubled
+            let widthBudget = max(0, geo.size.width - outerChrome - 28) / 4.2
+            let cardHeight = max(0, (geo.size.height - outerChrome - 10 * CGFloat(visibleCount - 1)) / CGFloat(visibleCount))
+            let heightBudget = max(0, cardHeight - 30) / 1.4
+            let fontSize = max(16, min(widthBudget, heightBudget))
+            contentBody
+                .environment(\.timerFontSize, fontSize)
+                .onAppear { syncWindowAspect() }
+                .onChange(of: engine.countdownVisible) { _ in syncWindowAspect() }
+                .onChange(of: engine.stopwatchVisible) { _ in syncWindowAspect() }
+        }
+    }
+
+    private func syncWindowAspect() {
+        let count = (engine.countdownVisible ? 1 : 0) + (engine.stopwatchVisible ? 1 : 0)
+        overlay.updateAspectAndSize(for: count)
+    }
+
+    private var contentBody: some View {
         ZStack(alignment: .topLeading) {
-            VStack(spacing: 8) {
+            VStack(spacing: 10) {
                 if engine.countdownVisible {
                     TimerPanel(
                         label: "Countdown",
@@ -22,6 +49,7 @@ struct OverlayView: View {
                                 .environmentObject(overlay)
                         )
                     )
+                    .frame(maxHeight: .infinity)
                 }
                 if engine.stopwatchVisible {
                     TimerPanel(
@@ -34,13 +62,14 @@ struct OverlayView: View {
                         onClose: { engine.stopwatchVisible = false },
                         timeView: stopwatchTimeView
                     )
+                    .frame(maxHeight: .infinity)
                 }
                 if !engine.countdownVisible && !engine.stopwatchVisible {
                     emptyState
                 }
             }
             .padding(10)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -48,10 +77,9 @@ struct OverlayView: View {
             )
             .padding(6)
 
-            lockIndicator
-                .padding(12)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ignoresSafeArea()
     }
 
     /// Stopwatch panel's time-area override: shows the big delay digit when a delay-start
@@ -64,26 +92,6 @@ struct OverlayView: View {
             return AnyView(DelayDisplayView(value: delay, tint: engine.stopwatchColor))
         default:
             return nil
-        }
-    }
-
-    @ViewBuilder
-    private var lockIndicator: some View {
-        if overlay.isLocked {
-            Image(systemName: "lock.fill")
-                .font(.system(size: 9, weight: .medium))
-                .foregroundStyle(.secondary.opacity(0.5))
-                .help("Locked — clicks pass through. Unlock from the menu bar.")
-        } else {
-            Button {
-                overlay.isLocked = true
-            } label: {
-                Image(systemName: "lock.open.fill")
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundStyle(.secondary.opacity(0.7))
-            }
-            .buttonStyle(.plain)
-            .help("Tap to lock (overlay becomes click-through).")
         }
     }
 
@@ -104,11 +112,25 @@ struct OverlayView: View {
     }
 }
 
+// MARK: - Environment key for window-driven font scaling
+
+struct TimerFontSizeKey: EnvironmentKey {
+    static let defaultValue: CGFloat = 54
+}
+
+extension EnvironmentValues {
+    var timerFontSize: CGFloat {
+        get { self[TimerFontSizeKey.self] }
+        set { self[TimerFontSizeKey.self] = newValue }
+    }
+}
+
 // MARK: - Editable countdown (tap-to-edit on the overlay panel)
 
 private struct EditableCountdownView: View {
     @EnvironmentObject var engine: TimerEngine
     @EnvironmentObject var overlay: OverlayController
+    @Environment(\.timerFontSize) private var fontSize
     @State private var isEditing = false
     @State private var editText = ""
     @FocusState private var fieldFocused: Bool
@@ -121,7 +143,7 @@ private struct EditableCountdownView: View {
                 TextField("MM:SS", text: $editText)
                     .textFieldStyle(.plain)
                     .focused($fieldFocused)
-                    .font(.system(size: 36, weight: .medium, design: .monospaced))
+                    .font(.system(size: fontSize, weight: .medium, design: .monospaced))
                     .foregroundStyle(engine.countdownColor)
                     .monospacedDigit()
                     .onSubmit { commit() }
@@ -131,16 +153,16 @@ private struct EditableCountdownView: View {
                     .onAppear { fieldFocused = true }
             } else {
                 Text(TimeFormatter.format(engine.countdownRemaining, precision: engine.precision))
-                    .font(.system(size: 36, weight: .medium, design: .monospaced))
+                    .font(.system(size: fontSize, weight: .medium, design: .monospaced))
                     .foregroundStyle(engine.countdownColor)
                     .monospacedDigit()
                     .lineLimit(1)
-                    .minimumScaleFactor(0.5)
+                    .minimumScaleFactor(0.4)
                     .contentShape(Rectangle())
                     .onTapGesture { beginEditing() }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .center)
     }
 
     private var isCountdownPending: Bool {
@@ -189,10 +211,12 @@ private struct EditableCountdownView: View {
 fileprivate struct DelayDisplayView: View {
     let value: Int
     let tint: Color
+    @Environment(\.timerFontSize) private var fontSize
 
     var body: some View {
+        // Delay digit ~10% larger than regular timer text for visual emphasis
         Text("\(value)")
-            .font(.system(size: 44, weight: .semibold, design: .rounded))
+            .font(.system(size: fontSize * 1.1, weight: .semibold, design: .rounded))
             .foregroundStyle(tint)
             .monospacedDigit()
             .frame(maxWidth: .infinity, alignment: .center)

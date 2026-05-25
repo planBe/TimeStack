@@ -10,6 +10,8 @@ struct TimerPanel: View {
     var onClose: (() -> Void)? = nil
     var timeView: AnyView? = nil
 
+    @Environment(\.timerFontSize) private var fontSize
+
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 6) {
@@ -33,18 +35,20 @@ struct TimerPanel: View {
             }
             if let timeView {
                 timeView
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 Text(TimeFormatter.format(time, precision: precision))
-                    .font(.system(size: 36, weight: .medium, design: .monospaced))
+                    .font(.system(size: fontSize, weight: .medium, design: .monospaced))
                     .foregroundStyle(tint)
                     .monospacedDigit()
                     .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .minimumScaleFactor(0.4)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }

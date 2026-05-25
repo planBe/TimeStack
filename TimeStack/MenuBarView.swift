@@ -6,6 +6,8 @@ struct MenuBarView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            brandingHeader
+            Divider()
             countdownSection
             Divider()
             stopwatchSection
@@ -27,6 +29,27 @@ struct MenuBarView: View {
             .padding(.vertical, 6)
         }
         .frame(width: 280)
+    }
+
+    // MARK: - Branding header
+
+    private var brandingHeader: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "stopwatch")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(.secondary)
+            Text("timeStack")
+                .font(.system(.body, design: .rounded).weight(.semibold))
+                .foregroundStyle(.primary)
+            Spacer()
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .interpolation(.high)
+                .frame(width: 32, height: 32)
+        }
+        .padding(.horizontal, 12)
+        .padding(.top, 8)
+        .padding(.bottom, 8)
     }
 
     // MARK: - Countdown
@@ -175,14 +198,21 @@ struct MenuBarView: View {
     private var styleSection: some View {
         VStack(alignment: .leading, spacing: 4) {
             sectionHeader("Style")
-            ColorPicker("Countdown color", selection: $engine.countdownColor, supportsOpacity: false)
-                .padding(.horizontal, 12)
-                .font(.caption)
-            ColorPicker("Stopwatch color", selection: $engine.stopwatchColor, supportsOpacity: false)
-                .padding(.horizontal, 12)
-                .padding(.bottom, 8)
-                .font(.caption)
+            colorRow(label: "Countdown color", color: $engine.countdownColor)
+            colorRow(label: "Stopwatch color", color: $engine.stopwatchColor)
+                .padding(.bottom, 4)
         }
+    }
+
+    private func colorRow(label: String, color: Binding<Color>) -> some View {
+        HStack {
+            Text(label)
+                .foregroundStyle(.secondary)
+            Spacer()
+            ColorSwatchButton(color: color)
+        }
+        .padding(.horizontal, 12)
+        .font(.caption)
     }
 
     // MARK: - Sound
@@ -248,5 +278,60 @@ struct MenuBarView: View {
             .padding(.horizontal, 12)
             .padding(.top, 8)
             .padding(.bottom, 2)
+    }
+}
+
+// MARK: - Color swatch button → opens NSColorPanel
+
+/// A SwiftUI swatch button that opens the system NSColorPanel on tap.
+/// We use NSColorPanel (a real Apple-managed top-level window) instead of
+/// NSColorWell's popover because popovers can't reliably anchor inside a
+/// MenuBarExtra window after app-switching. NSColorPanel handles activation
+/// correctly in all states.
+private struct ColorSwatchButton: View {
+    @Binding var color: Color
+
+    var body: some View {
+        Button {
+            ColorPanelCoordinator.shared.present(initialColor: color) { newColor in
+                color = newColor
+            }
+        } label: {
+            RoundedRectangle(cornerRadius: 5, style: .continuous)
+                .fill(color)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 5, style: .continuous)
+                        .stroke(.secondary.opacity(0.4), lineWidth: 0.5)
+                )
+                .frame(width: 44, height: 22)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// Bridges between transient SwiftUI swatch taps and the long-lived
+/// NSColorPanel.shared singleton. Holds the current color-change callback
+/// so target/action callbacks from NSColorPanel route to the right @Binding.
+@MainActor
+private final class ColorPanelCoordinator: NSObject {
+    static let shared = ColorPanelCoordinator()
+
+    private var onChange: ((Color) -> Void)?
+
+    private override init() { super.init() }
+
+    func present(initialColor: Color, onChange: @escaping (Color) -> Void) {
+        self.onChange = onChange
+        let panel = NSColorPanel.shared
+        panel.color = NSColor(initialColor)
+        panel.showsAlpha = false
+        panel.setTarget(self)
+        panel.setAction(#selector(colorChanged(_:)))
+        NSApp.activate(ignoringOtherApps: true)
+        panel.makeKeyAndOrderFront(nil)
+    }
+
+    @objc private func colorChanged(_ sender: NSColorPanel) {
+        onChange?(Color(sender.color))
     }
 }
