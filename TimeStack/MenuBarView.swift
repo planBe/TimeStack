@@ -1,4 +1,6 @@
 import SwiftUI
+import AppKit
+import UniformTypeIdentifiers
 
 struct MenuBarView: View {
     @EnvironmentObject var engine: TimerEngine
@@ -262,26 +264,109 @@ struct MenuBarView: View {
             HStack {
                 Picker("", selection: $engine.countdownEndSound) {
                     Text("None").tag("None")
+                    Text("Alarm").tag(TimerEngine.bundledAlarmTag)
+                    Divider()
                     ForEach(TimerEngine.availableSystemSounds, id: \.self) { name in
                         Text(name).tag(name)
                     }
+                    Divider()
+                    Text("Custom…").tag(TimerEngine.customSoundTag)
                 }
                 .labelsHidden()
                 .pickerStyle(.menu)
                 .disabled(!engine.soundEnabled)
+                .onChange(of: engine.countdownEndSound) { newValue in
+                    // Auto-prompt for a file the first time the user picks
+                    // Custom and no bookmark is set yet. Subsequent
+                    // selections of Custom (after a file is picked) just
+                    // switch playback; the Choose button below handles swaps.
+                    if newValue == TimerEngine.customSoundTag,
+                       engine.customSoundFileName == nil {
+                        promptForCustomSound()
+                    }
+                }
 
                 Button("Test") {
                     engine.previewCurrentSound()
                 }
-                .disabled(!engine.soundEnabled || engine.countdownEndSound == "None")
+                .disabled(testButtonDisabled)
             }
             .padding(.horizontal, 12)
             .font(.caption)
+
+            HStack {
+                Text("Repeat for")
+                    .foregroundStyle(.secondary)
+                Picker("", selection: $engine.soundDurationSeconds) {
+                    Text("Once").tag(0)
+                    Text("3s").tag(3)
+                    Text("5s").tag(5)
+                    Text("10s").tag(10)
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .disabled(!engine.soundEnabled || engine.countdownEndSound == "None")
+                Spacer()
+            }
+            .padding(.horizontal, 12)
+            .font(.caption)
+
+            if engine.countdownEndSound == TimerEngine.customSoundTag {
+                HStack(spacing: 6) {
+                    Text(engine.customSoundFileName ?? "(no file selected)")
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Choose…") { promptForCustomSound() }
+                        .buttonStyle(.borderless)
+                }
+                .padding(.horizontal, 12)
+                .font(.caption)
+            }
 
             Toggle("Tick during 3-2-1 delay", isOn: $engine.delayTickEnabled)
                 .padding(.horizontal, 12)
                 .padding(.bottom, 8)
                 .font(.caption)
+        }
+    }
+
+    private var testButtonDisabled: Bool {
+        if !engine.soundEnabled { return true }
+        if engine.countdownEndSound == "None" { return true }
+        if engine.countdownEndSound == TimerEngine.customSoundTag,
+           engine.customSoundFileName == nil { return true }
+        return false
+    }
+
+    /// Presents NSOpenPanel filtered to audio files, creates a security-scoped
+    /// bookmark on selection, and hands both off to the engine. NSApp.activate
+    /// is needed because LSUIElement (menu-bar agent) apps don't auto-foreground
+    /// — without it, the file panel can open behind other windows.
+    private func promptForCustomSound() {
+        let panel = NSOpenPanel()
+        panel.title = "Choose Sound"
+        panel.message = "Pick an audio file to play at countdown 0."
+        panel.prompt = "Choose"
+        panel.allowedContentTypes = [UTType.audio]
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+
+        NSApp.activate(ignoringOtherApps: true)
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        do {
+            let bookmark = try url.bookmarkData(
+                options: [.withSecurityScope, .securityScopeAllowOnlyReadAccess],
+                includingResourceValuesForKeys: nil,
+                relativeTo: nil
+            )
+            engine.setCustomSound(bookmark: bookmark, fileName: url.lastPathComponent)
+        } catch {
+            // Bookmark creation failure is rare (typically only for files on
+            // unsupported volumes). Silent in v1.1 — user can retry.
         }
     }
 

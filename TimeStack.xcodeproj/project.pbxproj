@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		17C6DED4936DC5CA5F8D1202 /* TimerEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6414A94D6AF0B4A0B3BBEA47 /* TimerEngine.swift */; };
 		45341F48EAB829B9327588FA /* ColorWell.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF1BB383CAE3626C33818DD4 /* ColorWell.swift */; };
+		6409DDCD894EA63A00B2B302 /* Alarm.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 727D9EA72061D6FB9A0658D2 /* Alarm.m4a */; };
 		7591CE49DA754C357EBA1C83 /* TimerPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D95E5F2E56C1BEB547DD2F0 /* TimerPanel.swift */; };
 		917EF092C4EDAC1B97E84604 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9683F58628B70D3CA11ED213 /* Assets.xcassets */; };
 		A9F97589DDE8C6B4996B1385 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA9607F9527C6D1BEAFE8B63 /* MenuBarView.swift */; };
@@ -23,6 +24,7 @@
 		4923A1461B24B3041948AF24 /* TimeStack.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TimeStack.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6414A94D6AF0B4A0B3BBEA47 /* TimerEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerEngine.swift; sourceTree = "<group>"; };
 		67F989C76A0A5412079869C0 /* OverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayView.swift; sourceTree = "<group>"; };
+		727D9EA72061D6FB9A0658D2 /* Alarm.m4a */ = {isa = PBXFileReference; path = Alarm.m4a; sourceTree = "<group>"; };
 		9683F58628B70D3CA11ED213 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		9D95E5F2E56C1BEB547DD2F0 /* TimerPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerPanel.swift; sourceTree = "<group>"; };
 		A58B632F2D7DEBC513B8C7B3 /* TimeStackApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeStackApp.swift; sourceTree = "<group>"; };
@@ -40,9 +42,18 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		4ECEEF080FE82BF719E4CD6C /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				727D9EA72061D6FB9A0658D2 /* Alarm.m4a */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
 		B47B01B94E080F7BC5BA8D81 /* TimeStack */ = {
 			isa = PBXGroup;
 			children = (
+				4ECEEF080FE82BF719E4CD6C /* Resources */,
 				9683F58628B70D3CA11ED213 /* Assets.xcassets */,
 				FF1BB383CAE3626C33818DD4 /* ColorWell.swift */,
 				DA9607F9527C6D1BEAFE8B63 /* MenuBarView.swift */,
@@ -124,6 +135,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6409DDCD894EA63A00B2B302 /* Alarm.m4a in Resources */,
 				917EF092C4EDAC1B97E84604 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

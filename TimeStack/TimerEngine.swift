@@ -44,6 +44,41 @@ final class TimerEngine: ObservableObject {
         didSet { saveSettings() }
     }
 
+    // MARK: - Custom user-picked sound (v1.1)
+
+    /// Display name of the user-picked custom sound file (e.g. "beep.wav").
+    /// Nil when no custom sound is set. Published so the menu can show the
+    /// filename below the picker when "Custom" is the active selection.
+    @Published private(set) var customSoundFileName: String?
+
+    /// Security-Scoped Bookmark blob for the user-picked sound file. Lets
+    /// the sandboxed app re-access the file across launches. Private — UI
+    /// only needs the filename. Set/cleared via `setCustomSound`/`clearCustomSound`.
+    private var customSoundBookmark: Data?
+
+    /// Sentinel tag value for the custom-sound branch in `countdownEndSound`.
+    /// Distinct from the system sound names in `availableSystemSounds`.
+    static let customSoundTag = "Custom"
+
+    /// Sentinel tag for the bundled "Alarm" sound — a 1s two-tone bee-doo
+    /// loop bundled at `Alarm.m4a`. Picked as the new v1.1 default because
+    /// macOS system sounds are all sub-1s single-hit cues that don't read
+    /// as "alarm" for the speedrun / pomodoro / focus use case. Per D-030.
+    static let bundledAlarmTag = "Alarm"
+
+    /// How long the end-of-countdown sound plays. 0 = play once (natural
+    /// duration of the chosen sound). N > 0 = loop the sound and stop after
+    /// N seconds. Applied uniformly to system sounds, bundled Alarm, and
+    /// user-picked custom sounds. Per D-030.
+    @Published var soundDurationSeconds: Int {
+        didSet { saveSettings() }
+    }
+
+    /// Held reference to the currently-playing NSSound so we can stop it
+    /// when soundDurationSeconds elapses, or when the user triggers another
+    /// preview before the prior one ends.
+    private var currentSound: NSSound?
+
     // MARK: - User-configurable state (v0.3)
 
     /// Seconds of "get ready" countdown before any Start action actually starts the timers.
@@ -91,7 +126,8 @@ final class TimerEngine: ObservableObject {
 
     static let defaultCountdownColor = Color(red: 0.129, green: 0.129, blue: 0.129)  // #212121
     static let defaultStopwatchColor = Color(red: 0.580, green: 0.067, blue: 0.000)  // #941100
-    static let defaultCountdownEndSound = "Glass"
+    static let defaultCountdownEndSound = bundledAlarmTag
+    static let defaultSoundDurationSeconds = 3
     /// macOS-bundled NSSound names that are present on every install since 10.6.
     static let availableSystemSounds: [String] = [
         "Basso", "Blow", "Bottle", "Frog", "Funk", "Glass", "Hero",
@@ -128,6 +164,9 @@ final class TimerEngine: ObservableObject {
         self.countdownEndSound = (dict["countdownEndSound"] as? String) ?? TimerEngine.defaultCountdownEndSound
         self.delaySeconds = max(0, min(10, (dict["delaySeconds"] as? Int) ?? 3))
         self.delayTickEnabled = (dict["delayTickEnabled"] as? Bool) ?? false
+        self.customSoundFileName = dict["customSoundFileName"] as? String
+        self.customSoundBookmark = dict["customSoundBookmark"] as? Data
+        self.soundDurationSeconds = (dict["soundDurationSeconds"] as? Int) ?? TimerEngine.defaultSoundDurationSeconds
 
         startDisplayLoop()
     }
@@ -261,11 +300,93 @@ final class TimerEngine: ObservableObject {
         countdownEndSound = TimerEngine.defaultCountdownEndSound
         delaySeconds = 3
         delayTickEnabled = false
+        customSoundFileName = nil
+        customSoundBookmark = nil
+        soundDurationSeconds = TimerEngine.defaultSoundDurationSeconds
+        saveSettings()
+    }
+
+    // MARK: - Custom sound mutators
+
+    /// Persists a user-picked sound file's security-scoped bookmark + display
+    /// name, and switches `countdownEndSound` to the custom branch.
+    func setCustomSound(bookmark: Data, fileName: String) {
+        customSoundBookmark = bookmark
+        customSoundFileName = fileName
+        countdownEndSound = TimerEngine.customSoundTag
+        saveSettings()
+    }
+
+    /// Clears the custom sound and reverts `countdownEndSound` to the
+    /// default system sound. Called from the menu's clear-custom affordance.
+    func clearCustomSound() {
+        customSoundBookmark = nil
+        customSoundFileName = nil
+        if countdownEndSound == TimerEngine.customSoundTag {
+            countdownEndSound = TimerEngine.defaultCountdownEndSound
+        }
+        saveSettings()
     }
 
     private func playEndSound() {
         guard soundEnabled, countdownEndSound != "None" else { return }
-        NSSound(named: countdownEndSound)?.play()
+
+        // Stop any prior playback (e.g. rapid-fire Test presses or back-to-back
+        // countdown completes) so they don't pile up.
+        currentSound?.stop()
+        currentSound = nil
+
+        let sound: NSSound?
+        switch countdownEndSound {
+        case TimerEngine.customSoundTag:
+            sound = loadCustomSound()
+        case TimerEngine.bundledAlarmTag:
+            sound = loadBundledAlarmSound()
+        default:
+            sound = NSSound(named: countdownEndSound)
+        }
+        guard let s = sound else { return }
+
+        if soundDurationSeconds > 0 {
+            s.loops = true
+        }
+        currentSound = s
+        s.play()
+
+        if soundDurationSeconds > 0 {
+            let seconds = Double(soundDurationSeconds)
+            DispatchQueue.main.asyncAfter(deadline: .now() + seconds) { [weak self, weak s] in
+                guard let s = s else { return }
+                s.stop()
+                if self?.currentSound === s { self?.currentSound = nil }
+            }
+        }
+    }
+
+    /// Resolves the security-scoped bookmark for the user-picked sound file,
+    /// reads its bytes, and returns an NSSound. Loading into `Data` lets us
+    /// release scoped access immediately — NSSound owns its own copy. Silent
+    /// failure on missing/moved file or stale bookmark; user can re-pick.
+    private func loadCustomSound() -> NSSound? {
+        guard let bookmark = customSoundBookmark else { return nil }
+        var isStale = false
+        guard let url = try? URL(
+            resolvingBookmarkData: bookmark,
+            options: [.withSecurityScope],
+            relativeTo: nil,
+            bookmarkDataIsStale: &isStale
+        ) else { return nil }
+        guard url.startAccessingSecurityScopedResource() else { return nil }
+        defer { url.stopAccessingSecurityScopedResource() }
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return NSSound(data: data)
+    }
+
+    /// Loads the bundled Alarm.m4a from the app bundle. `byReference: false`
+    /// reads the file data eagerly so the NSSound is self-contained.
+    private func loadBundledAlarmSound() -> NSSound? {
+        guard let url = Bundle.main.url(forResource: "Alarm", withExtension: "m4a") else { return nil }
+        return NSSound(contentsOf: url, byReference: false)
     }
 
     /// Soft Tink for each visible digit of the 3-2-1 delay countdown.
@@ -352,7 +473,7 @@ final class TimerEngine: ObservableObject {
     // MARK: - Persistence
 
     private func saveSettings() {
-        let dict: [String: Any] = [
+        var dict: [String: Any] = [
             "countdownTarget": countdownTarget,
             "countdownVisible": countdownVisible,
             "stopwatchVisible": stopwatchVisible,
@@ -363,7 +484,17 @@ final class TimerEngine: ObservableObject {
             "countdownEndSound": countdownEndSound,
             "delaySeconds": delaySeconds,
             "delayTickEnabled": delayTickEnabled,
+            "soundDurationSeconds": soundDurationSeconds,
         ]
+        // Custom-sound entries are conditional — when nil, omit the keys
+        // entirely. The whole dict is replaced on each set, so cleared
+        // values don't linger from prior writes.
+        if let fileName = customSoundFileName {
+            dict["customSoundFileName"] = fileName
+        }
+        if let bookmark = customSoundBookmark {
+            dict["customSoundBookmark"] = bookmark
+        }
         UserDefaults.standard.set(dict, forKey: settingsKey)
     }
 
