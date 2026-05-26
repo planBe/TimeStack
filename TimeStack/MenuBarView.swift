@@ -276,8 +276,12 @@ struct MenuBarView: View {
                 .disabled(!engine.soundEnabled || engine.countdownEndSound == "None")
             }
             .padding(.horizontal, 12)
-            .padding(.bottom, 8)
             .font(.caption)
+
+            Toggle("Tick during 3-2-1 delay", isOn: $engine.delayTickEnabled)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
+                .font(.caption)
         }
     }
 

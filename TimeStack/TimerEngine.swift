@@ -37,6 +37,12 @@ final class TimerEngine: ObservableObject {
     @Published var countdownEndSound: String {
         didSet { saveSettings() }
     }
+    /// When true, plays a soft Tink on each visible digit of the 3-2-1 delay
+    /// countdown. Independent from `soundEnabled` (which gates the
+    /// countdown-end sound) — a user may want one without the other.
+    @Published var delayTickEnabled: Bool {
+        didSet { saveSettings() }
+    }
 
     // MARK: - User-configurable state (v0.3)
 
@@ -121,6 +127,7 @@ final class TimerEngine: ObservableObject {
         self.soundEnabled = (dict["soundEnabled"] as? Bool) ?? false
         self.countdownEndSound = (dict["countdownEndSound"] as? String) ?? TimerEngine.defaultCountdownEndSound
         self.delaySeconds = max(0, min(10, (dict["delaySeconds"] as? Int) ?? 3))
+        self.delayTickEnabled = (dict["delayTickEnabled"] as? Bool) ?? false
 
         startDisplayLoop()
     }
@@ -253,11 +260,20 @@ final class TimerEngine: ObservableObject {
         soundEnabled = false
         countdownEndSound = TimerEngine.defaultCountdownEndSound
         delaySeconds = 3
+        delayTickEnabled = false
     }
 
     private func playEndSound() {
         guard soundEnabled, countdownEndSound != "None" else { return }
         NSSound(named: countdownEndSound)?.play()
+    }
+
+    /// Soft Tink for each visible digit of the 3-2-1 delay countdown.
+    /// Hardcoded sound choice — keeps v1.1 scope tight; picker can land in
+    /// v1.2 if users ask for it.
+    private func playDelayTick() {
+        guard delayTickEnabled else { return }
+        NSSound(named: "Tink")?.play()
     }
 
     // MARK: - Delay-start state machine (v0.3)
@@ -266,6 +282,7 @@ final class TimerEngine: ObservableObject {
         cancelDelay()
         pendingAction = action
         delayRemaining = delaySeconds
+        playDelayTick()  // tick aligned with initial digit appearing
         delayTickTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 self?.delayTick()
@@ -289,8 +306,10 @@ final class TimerEngine: ObservableObject {
                 startStopwatchNow()
             case .none: break
             }
+            // No tick on the start moment — the timer beginning is its own cue.
         } else {
             delayRemaining = current - 1
+            playDelayTick()  // tick aligned with each subsequent digit appearing
         }
     }
 
@@ -343,6 +362,7 @@ final class TimerEngine: ObservableObject {
             "soundEnabled": soundEnabled,
             "countdownEndSound": countdownEndSound,
             "delaySeconds": delaySeconds,
+            "delayTickEnabled": delayTickEnabled,
         ]
         UserDefaults.standard.set(dict, forKey: settingsKey)
     }
