@@ -13,20 +13,28 @@ struct TimerPanel: View {
     @Environment(\.timerFontSize) private var fontSize
 
     var body: some View {
+        // Gentle header scaling derived from timerFontSize. At fontSize=55
+        // (default) this resolves to exactly 11pt — matching pre-v1.1
+        // baseline. At small windows (fontSize ~28) shrinks to 9pt floor for
+        // more timer breathing room; at large windows grows to a 14pt cap so
+        // the header isn't visually swamped by giant timer text. Dot and ×
+        // scale proportionally so the row reads as one cohesive element.
+        let headerSize = min(14, max(9, fontSize * 0.20))
+        let dotSize = headerSize * 0.55
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 6) {
                 Circle()
                     .fill(isRunning ? tint : .secondary.opacity(0.5))
-                    .frame(width: 6, height: 6)
+                    .frame(width: dotSize, height: dotSize)
                 Text(label.uppercased())
-                    .font(.system(.caption2, design: .rounded).weight(.semibold))
+                    .font(.system(size: headerSize, design: .rounded).weight(.semibold))
                     .foregroundStyle(.secondary)
                     .tracking(0.5)
                 Spacer()
                 if showCloseButton, let onClose {
                     Button(action: onClose) {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.system(size: headerSize, weight: .medium))
                             .foregroundStyle(.secondary.opacity(0.7))
                     }
                     .buttonStyle(.plain)

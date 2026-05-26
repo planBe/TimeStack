@@ -17,14 +17,16 @@ struct OverlayView: View {
             let widthBudget = max(0, geo.size.width - outerChrome - 28) / 4.2
             let cardHeight = max(0, (geo.size.height - outerChrome - 10 * CGFloat(visibleCount - 1)) / CGFloat(visibleCount))
             // Card chrome (post v0.4-tight): TimerPanel .padding(.vertical, 4)
-            // × 2 + header (~14pt) + spacing (~2pt) = ~24pt. Divide by 1.2
+            // × 2 + header (≤14pt cap) + spacing (~2pt) = ~24pt. Divide by 1.2
             // to account for monospaced text's intrinsic line-height — without
             // this multiplier, SwiftUI's .minimumScaleFactor kicks in to
-            // shrink the displayed text below the nominal font size.
+            // shrink the displayed text below the nominal font size. Header
+            // is dynamic per TimerPanel's `fontSize * 0.20` clamped [9,14] —
+            // budget uses the 14pt cap as the conservative worst case.
             let heightBudget = max(0, cardHeight - 24) / 1.2
-            // Floor at 28pt: at small windows the time stays glance-readable
-            // and the proportion against the fixed 11pt header reads as a
-            // clear hierarchy (2.5:1) instead of looking broken.
+            // Floor at 28pt: at small windows the time stays glance-readable.
+            // Header gently shrinks toward 9pt at the floor (~3:1 hierarchy),
+            // grows toward 14pt at large fontSize (~20:1 for max readability).
             let fontSize = max(28, min(widthBudget, heightBudget))
             contentBody
                 .environment(\.timerFontSize, fontSize)
