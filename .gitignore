@@ -31,3 +31,8 @@ Package.resolved
 
 # CocoaPods (not used)
 Pods/
+
+# Source materials (App Store screenshots, raw audio sources, etc.)
+# — bundled artifacts live under TimeStack/Resources/; these are upstream.
+graphics/
+sounds/

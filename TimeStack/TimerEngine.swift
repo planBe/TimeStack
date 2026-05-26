@@ -66,6 +66,13 @@ final class TimerEngine: ObservableObject {
     /// as "alarm" for the speedrun / pomodoro / focus use case. Per D-030.
     static let bundledAlarmTag = "Alarm"
 
+    /// Sentinel tag for the bundled "Siren" sound — a 21s Taiwan EAS-style
+    /// alert tone (ascending/descending wail), heavier and more
+    /// attention-getting than the default Alarm. Picked for users whose
+    /// attention is genuinely elsewhere (heads-down speedrun, gameplay).
+    /// Per D-031.
+    static let bundledSirenTag = "Siren"
+
     /// How many times to play the end-of-countdown sound. 1 = play once
     /// naturally. N > 1 = play N times, using NSSound's delegate callback
     /// to chain replays after each finish — gives a natural ~10ms gap
@@ -350,7 +357,9 @@ final class TimerEngine: ObservableObject {
         case TimerEngine.customSoundTag:
             sound = loadCustomSound()
         case TimerEngine.bundledAlarmTag:
-            sound = loadBundledAlarmSound()
+            sound = loadBundledSound(named: "Alarm", ext: "m4a")
+        case TimerEngine.bundledSirenTag:
+            sound = loadBundledSound(named: "Siren", ext: "m4a")
         default:
             sound = NSSound(named: countdownEndSound)
         }
@@ -390,10 +399,10 @@ final class TimerEngine: ObservableObject {
         return NSSound(data: data)
     }
 
-    /// Loads the bundled Alarm.m4a from the app bundle. `byReference: false`
+    /// Loads a bundled audio resource from the app bundle. `byReference: false`
     /// reads the file data eagerly so the NSSound is self-contained.
-    private func loadBundledAlarmSound() -> NSSound? {
-        guard let url = Bundle.main.url(forResource: "Alarm", withExtension: "m4a") else { return nil }
+    private func loadBundledSound(named name: String, ext: String) -> NSSound? {
+        guard let url = Bundle.main.url(forResource: name, withExtension: ext) else { return nil }
         return NSSound(contentsOf: url, byReference: false)
     }
 

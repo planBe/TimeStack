@@ -265,6 +265,7 @@ struct MenuBarView: View {
                 Picker("", selection: $engine.countdownEndSound) {
                     Text("None").tag("None")
                     Text("Alarm").tag(TimerEngine.bundledAlarmTag)
+                    Text("Siren").tag(TimerEngine.bundledSirenTag)
                     Divider()
                     ForEach(TimerEngine.availableSystemSounds, id: \.self) { name in
                         Text(name).tag(name)

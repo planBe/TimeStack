@@ -34,6 +34,11 @@ Free, always-on-top transparent overlay timers for macOS. A stacked **countdown*
 
 MIT. See [LICENSE](LICENSE).
 
+## Credits
+
+- **Alarm** (bundled default sound) — generated programmatically; see [`gen_alarm.py`](gen_alarm.py).
+- **Siren** (bundled alternate sound, Taiwan EAS-style wail) — by [jeremayjimenez](https://pixabay.com/users/jeremayjimenez-28887262/) on Pixabay, used under the [Pixabay Content License](https://pixabay.com/service/license-summary/).
+
 ## About
 
 Part of the **Stack** family of free, open-source macOS utilities. See also:
