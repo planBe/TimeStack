@@ -66,18 +66,26 @@ final class TimerEngine: ObservableObject {
     /// as "alarm" for the speedrun / pomodoro / focus use case. Per D-030.
     static let bundledAlarmTag = "Alarm"
 
-    /// How long the end-of-countdown sound plays. 0 = play once (natural
-    /// duration of the chosen sound). N > 0 = loop the sound and stop after
-    /// N seconds. Applied uniformly to system sounds, bundled Alarm, and
-    /// user-picked custom sounds. Per D-030.
-    @Published var soundDurationSeconds: Int {
+    /// How many times to play the end-of-countdown sound. 1 = play once
+    /// naturally. N > 1 = play N times, using NSSound's delegate callback
+    /// to chain replays after each finish — gives a natural ~10ms gap
+    /// between iterations that reads as rhythmic for short sounds. Applied
+    /// uniformly to system sounds, bundled Alarm, and user-picked custom
+    /// sounds. Per D-030.
+    @Published var soundPlayCount: Int {
         didSet { saveSettings() }
     }
 
-    /// Held reference to the currently-playing NSSound so we can stop it
-    /// when soundDurationSeconds elapses, or when the user triggers another
-    /// preview before the prior one ends.
+    /// Held reference to the currently-playing NSSound so back-to-back
+    /// triggers (rapid Test presses, or countdown completes during preview)
+    /// stop the prior cleanly.
     private var currentSound: NSSound?
+
+    /// Held reference to the delegate that chains repeat plays. Must live
+    /// as long as the sound is playing; NSSound's delegate property is
+    /// `weak`, so without our strong ref the delegate would deallocate
+    /// after its enclosing scope ends and replay would never fire.
+    private var soundReplayDelegate: SoundReplayDelegate?
 
     // MARK: - User-configurable state (v0.3)
 
@@ -127,7 +135,7 @@ final class TimerEngine: ObservableObject {
     static let defaultCountdownColor = Color(red: 0.129, green: 0.129, blue: 0.129)  // #212121
     static let defaultStopwatchColor = Color(red: 0.580, green: 0.067, blue: 0.000)  // #941100
     static let defaultCountdownEndSound = bundledAlarmTag
-    static let defaultSoundDurationSeconds = 3
+    static let defaultSoundPlayCount = 3
     /// macOS-bundled NSSound names that are present on every install since 10.6.
     static let availableSystemSounds: [String] = [
         "Basso", "Blow", "Bottle", "Frog", "Funk", "Glass", "Hero",
@@ -166,7 +174,7 @@ final class TimerEngine: ObservableObject {
         self.delayTickEnabled = (dict["delayTickEnabled"] as? Bool) ?? false
         self.customSoundFileName = dict["customSoundFileName"] as? String
         self.customSoundBookmark = dict["customSoundBookmark"] as? Data
-        self.soundDurationSeconds = (dict["soundDurationSeconds"] as? Int) ?? TimerEngine.defaultSoundDurationSeconds
+        self.soundPlayCount = max(1, (dict["soundPlayCount"] as? Int) ?? TimerEngine.defaultSoundPlayCount)
 
         startDisplayLoop()
     }
@@ -302,7 +310,7 @@ final class TimerEngine: ObservableObject {
         delayTickEnabled = false
         customSoundFileName = nil
         customSoundBookmark = nil
-        soundDurationSeconds = TimerEngine.defaultSoundDurationSeconds
+        soundPlayCount = TimerEngine.defaultSoundPlayCount
         saveSettings()
     }
 
@@ -335,6 +343,7 @@ final class TimerEngine: ObservableObject {
         // countdown completes) so they don't pile up.
         currentSound?.stop()
         currentSound = nil
+        soundReplayDelegate = nil
 
         let sound: NSSound?
         switch countdownEndSound {
@@ -347,20 +356,19 @@ final class TimerEngine: ObservableObject {
         }
         guard let s = sound else { return }
 
-        if soundDurationSeconds > 0 {
-            s.loops = true
+        let count = max(1, soundPlayCount)
+        if count > 1 {
+            let delegate = SoundReplayDelegate(remaining: count - 1) { [weak self] finished in
+                if self?.currentSound === finished {
+                    self?.currentSound = nil
+                    self?.soundReplayDelegate = nil
+                }
+            }
+            soundReplayDelegate = delegate
+            s.delegate = delegate
         }
         currentSound = s
         s.play()
-
-        if soundDurationSeconds > 0 {
-            let seconds = Double(soundDurationSeconds)
-            DispatchQueue.main.asyncAfter(deadline: .now() + seconds) { [weak self, weak s] in
-                guard let s = s else { return }
-                s.stop()
-                if self?.currentSound === s { self?.currentSound = nil }
-            }
-        }
     }
 
     /// Resolves the security-scoped bookmark for the user-picked sound file,
@@ -484,7 +492,7 @@ final class TimerEngine: ObservableObject {
             "countdownEndSound": countdownEndSound,
             "delaySeconds": delaySeconds,
             "delayTickEnabled": delayTickEnabled,
-            "soundDurationSeconds": soundDurationSeconds,
+            "soundPlayCount": soundPlayCount,
         ]
         // Custom-sound entries are conditional — when nil, omit the keys
         // entirely. The whole dict is replaced on each set, so cleared
@@ -526,5 +534,31 @@ extension Color {
         let g = Int(round(ns.greenComponent * 255))
         let b = Int(round(ns.blueComponent * 255))
         return String(format: "#%02X%02X%02X", r, g, b)
+    }
+}
+
+// MARK: - NSSound replay delegate
+
+/// Chains N-1 replays after the initial NSSound.play() call, giving true
+/// "play N times" semantics. NSSound's `delegate` is weak, so the
+/// enclosing engine must hold a strong reference to this object for the
+/// full playback duration — otherwise the delegate deallocates and replay
+/// silently stops at the first finish callback.
+final class SoundReplayDelegate: NSObject, NSSoundDelegate {
+    private var remaining: Int
+    private let onAllDone: (NSSound) -> Void
+
+    init(remaining: Int, onAllDone: @escaping (NSSound) -> Void) {
+        self.remaining = remaining
+        self.onAllDone = onAllDone
+    }
+
+    func sound(_ sound: NSSound, didFinishPlaying flag: Bool) {
+        guard flag, remaining > 0 else {
+            onAllDone(sound)
+            return
+        }
+        remaining -= 1
+        sound.play()
     }
 }

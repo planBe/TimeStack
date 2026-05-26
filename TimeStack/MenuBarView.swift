@@ -295,13 +295,13 @@ struct MenuBarView: View {
             .font(.caption)
 
             HStack {
-                Text("Repeat for")
+                Text("Play")
                     .foregroundStyle(.secondary)
-                Picker("", selection: $engine.soundDurationSeconds) {
-                    Text("Once").tag(0)
-                    Text("3s").tag(3)
-                    Text("5s").tag(5)
-                    Text("10s").tag(10)
+                Picker("", selection: $engine.soundPlayCount) {
+                    Text("Once").tag(1)
+                    Text("3×").tag(3)
+                    Text("5×").tag(5)
+                    Text("10×").tag(10)
                 }
                 .labelsHidden()
                 .pickerStyle(.menu)
