@@ -88,13 +88,17 @@ final class OverlayController: NSObject, ObservableObject, NSWindowDelegate {
         window.aspectRatio = aspect
         window.contentAspectRatio = aspect
 
-        // Resize: keep current width, derive new height from aspect, anchor
-        // top edge. animate: false to avoid mid-animation GeometryReader
-        // race conditions that left content stranded above the visible area.
+        // Resize: enforce the new minSize on width FIRST (so saved frames
+        // from a previous version with smaller minimums get bumped up),
+        // then derive height from aspect, then enforce minH. Anchor top
+        // edge. animate: false avoids mid-animation GeometryReader race.
         var frame = window.frame
-        let newHeight = max(minH, frame.size.width * h / w)
+        let newWidth = max(minW, frame.size.width)
+        let newHeight = max(minH, newWidth * h / w)
         let deltaHeight = frame.size.height - newHeight
-        guard abs(deltaHeight) > 0.5 else { return }
+        let deltaWidth = newWidth - frame.size.width
+        guard abs(deltaHeight) > 0.5 || abs(deltaWidth) > 0.5 else { return }
+        frame.size.width = newWidth
         frame.size.height = newHeight
         frame.origin.y += deltaHeight
         window.setFrame(frame, display: true, animate: false)
@@ -155,6 +159,27 @@ final class OverlayController: NSObject, ObservableObject, NSWindowDelegate {
         panel.ignoresMouseEvents = isLocked
         panel.alphaValue = alpha
 
+        // Initial size limits assume both timers visible (8:5 aspect). Sized
+        // so the 28pt time-text floor fits cleanly. OverlayView's .onAppear
+        // calls updateAspectAndSize() which re-applies the correct aspect/
+        // min/max if the saved state has a timer hidden — or if the saved
+        // frame is below the current minimums (e.g., from an earlier version).
+        let minSize = NSSize(width: 260, height: 160)
+        let maxSize = NSSize(width: 1440, height: 900)
+        panel.minSize = minSize
+        panel.maxSize = maxSize
+        panel.contentMinSize = minSize
+        panel.contentMaxSize = maxSize
+        panel.contentAspectRatio = NSSize(width: 8, height: 5)
+        panel.aspectRatio = NSSize(width: 8, height: 5)
+
+        // CRITICAL: assign self.window BEFORE mounting SwiftUI content —
+        // OverlayView's .onAppear fires during contentView assignment and
+        // calls updateAspectAndSize, which early-returns if window is nil.
+        // Setting window first guarantees the .onAppear-driven resize works
+        // on saved frames that are below the current minimum.
+        self.window = panel
+
         // Wrap NSHostingView in a NoIntrinsicSizeView container — explicitly
         // returns noIntrinsicMetric so SwiftUI's intrinsic size never propagates
         // up to override the panel's min/max. (Plain NSView still propagates
@@ -171,19 +196,6 @@ final class OverlayController: NSObject, ObservableObject, NSWindowDelegate {
         ])
         panel.contentView = container
 
-        // Initial size limits assume both timers visible (8:5 aspect). Sized
-        // so the 28pt time-text floor fits cleanly. OverlayView's .onAppear
-        // calls updateAspectAndSize() which re-applies the correct aspect/
-        // min/max if the saved state has a timer hidden.
-        let minSize = NSSize(width: 260, height: 160)
-        let maxSize = NSSize(width: 1440, height: 900)
-        panel.minSize = minSize
-        panel.maxSize = maxSize
-        panel.contentMinSize = minSize
-        panel.contentMaxSize = maxSize
-        panel.contentAspectRatio = NSSize(width: 8, height: 5)
-        panel.aspectRatio = NSSize(width: 8, height: 5)
-
         // Companion lock-corner window — small always-clickable panel
         // positioned at the main panel's top-left. When the main panel is in
         // click-through mode (isLocked = true), this window is still
@@ -193,8 +205,6 @@ final class OverlayController: NSObject, ObservableObject, NSWindowDelegate {
 
         panel.delegate = self
         panel.orderFrontRegardless()
-
-        self.window = panel
     }
 
     // MARK: - NSWindowDelegate
