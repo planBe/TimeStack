@@ -10,7 +10,7 @@ open TimeStack.xcodeproj
 
 Then ⌘R in Xcode. That's it.
 
-The `TimeStack.xcodeproj` bundle is checked in and ready to build. Minimum: Xcode 15+, macOS 13.0+. App Sandbox is enabled by default; no additional entitlements needed for v0.x.
+The `TimeStack.xcodeproj` bundle is checked in and ready to build. Minimum: Xcode 16+, macOS 13.0+. App Sandbox is enabled; v1.1 adds the `com.apple.security.files.user-selected.read-only` entitlement for the Custom… sound option (lets the user pick their own audio file via the standard Open dialog).
 
 ## Reproducible path — regenerate the project from `project.yml`
 
@@ -35,5 +35,5 @@ For the family-wide rationale on XcodeGen adoption, see KaizenUBA `DECISIONS.md`
 
 - **Floating panel doesn't appear:** off-screen saved frame protection (v0.2+) should center it on main screen. If you're on v0.1 or older and it doesn't appear, delete defaults with: `defaults delete com.planbecreative.TimeStack` and relaunch.
 - **Panel doesn't stay above Minecraft:** v0.1+ supports Minecraft with the Fullscreen toggle **OFF** (Options → Video Settings → Fullscreen). Fullscreen-Spaces support is roadmap.
-- **Click-through doesn't work after locking:** sanity check that the lock indicator in the overlay's top-right corner shows the closed-padlock state. When locked, you cannot drag the panel or click controls on it — that's intentional. Unlock via the menu bar Display section ("Lock (click-through)" toggle).
+- **Click-through doesn't work after locking (v0.4+):** check the lock-corner panel in the overlay's top-left — it's a small always-clickable companion window that shows the closed-padlock state when locked. The main overlay is fully click-through when locked; the lock corner stays clickable so you can tap it again to unlock without leaving the overlay. (v0.3 had a different one-way lock UI; v0.4 replaced it with this two-window architecture per `DECISIONS.md` D-029.)
 - **Build fails on `@Published` / `ObservableObject` errors:** Xcode 16's stricter module visibility (`SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES`) requires explicit `import Combine` alongside `import SwiftUI` in files that conform to `ObservableObject`. This should already be done in current source.
