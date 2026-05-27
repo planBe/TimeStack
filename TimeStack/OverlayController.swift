@@ -249,7 +249,10 @@ final class OverlayController: NSObject, ObservableObject, NSWindowDelegate {
     /// otherwise centers a default-sized panel on the main screen. Handles the
     /// monitor-unplugged case so the overlay never lands invisibly off-screen.
     private func preferredInitialFrame() -> CGRect {
-        let defaultSize = CGSize(width: 220, height: 240)
+        // 8:5 aspect to match the both-visible default; comfortably above the
+        // 260x160 minSize so a fresh-defaults launch lands at a usable
+        // working size rather than the cramped minimum.
+        let defaultSize = CGSize(width: 480, height: 300)
         if let saved = loadSavedFrame(), isFrameVisible(saved) {
             return saved
         }
