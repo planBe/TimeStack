@@ -25,13 +25,13 @@
 		4923A1461B24B3041948AF24 /* TimeStack.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TimeStack.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6414A94D6AF0B4A0B3BBEA47 /* TimerEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerEngine.swift; sourceTree = "<group>"; };
 		67F989C76A0A5412079869C0 /* OverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayView.swift; sourceTree = "<group>"; };
-		727D9EA72061D6FB9A0658D2 /* Alarm.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = Alarm.m4a; sourceTree = "<group>"; };
+		727D9EA72061D6FB9A0658D2 /* Alarm.m4a */ = {isa = PBXFileReference; path = Alarm.m4a; sourceTree = "<group>"; };
 		9683F58628B70D3CA11ED213 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		9D95E5F2E56C1BEB547DD2F0 /* TimerPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerPanel.swift; sourceTree = "<group>"; };
 		A58B632F2D7DEBC513B8C7B3 /* TimeStackApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeStackApp.swift; sourceTree = "<group>"; };
 		DA9607F9527C6D1BEAFE8B63 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
 		EDE9E00FB0F133BFEA016A9F /* OverlayController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayController.swift; sourceTree = "<group>"; };
-		F20D70F051D0A8672991AD10 /* Siren.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = Siren.m4a; sourceTree = "<group>"; };
+		F20D70F051D0A8672991AD10 /* Siren.m4a */ = {isa = PBXFileReference; path = Siren.m4a; sourceTree = "<group>"; };
 		FF1BB383CAE3626C33818DD4 /* ColorWell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorWell.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
