@@ -4,7 +4,7 @@ Free, always-on-top transparent overlay timers for macOS. A stacked **countdown*
 
 ## Status
 
-**v1.0 submitted to the Mac App Store** (2026-05-25, awaiting Apple review). **v1.1 shipped to GitHub Releases** (2026-05-27) — bundled Alarm + Siren sounds, custom user-sound picker, configurable play count, opt-in delay-start audio tick, gentle UI scaling at small window sizes. **v1.2 in development** — Pause/Resume Both consolidation in the menu, saner first-run defaults, fresh-state overlay sizing fix.
+**v1.0 — full first release**, submitted to the Mac App Store 2026-05-27 and published as a notarized binary on GitHub Releases the same day. All features listed below ship in v1.0; future versions accumulate from here.
 
 ## Features
 
@@ -53,13 +53,8 @@ Settings persist in `UserDefaults` under `TimeStack.settings.v2`. Multi-monitor 
 
 ## Roadmap
 
-- [x] v0.1 — overlay + countdown/stopwatch + click-through lock
-- [x] v0.2 — user-customizable colors, precision picker, opt-in countdown-end sound, click-to-edit countdown numbers
-- [x] v0.3 — 3-2-1 delay-start
-- [x] v0.4 — NSColorPanel-based color UI, font scaling, two-window lock architecture, branded menu header
-- [x] v1.0 — submitted to Mac App Store 2026-05-25
-- [x] v1.1 — AccentColor asset, gentle header scaling at small windows, opt-in audio tick during delay, custom user-sound picker (Security-Scoped Bookmarks), bundled Alarm + Siren sounds, play-N-times count semantic
-- [ ] v1.2 — Pause/Resume Both consolidation (single label-flipping button + Reset Both), first-run defaults flipped (sound on, Once, delay off), fresh-defaults overlay sizing fix; future: in-app Credits surface, optional custom-sound trimming, additional bundled alarm options
+- [x] **v1.0** — initial release. Full feature set above: overlay countdown + stopwatch, click-through lock with always-clickable lock corner, NSColorPanel per-timer colors, GeometryReader-driven font scaling, precision picker, click-to-edit countdown numbers, optional 3-2-1 delay-start with audio tick, both-at-once controls with Pause/Resume Both consolidation, bundled Alarm + Siren sounds plus 14 system sounds plus user-picked custom audio file, play-N-times count semantic, multi-monitor robust persistence
+- [ ] **v1.1+** — future candidates: in-app Credits surface, optional custom-sound trimming, additional bundled alarm options, configurable global hotkey to show/hide the overlay
 
 ## Privacy
 
