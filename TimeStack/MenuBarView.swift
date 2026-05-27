@@ -155,8 +155,7 @@ struct MenuBarView: View {
 
     private var bothSection: some View {
         HStack {
-            Button(bothActionLabel) { engine.startBoth() }
-            Button("Stop Both") { engine.stopBoth() }
+            Button(mainBothLabel) { mainBothAction() }
             Button("Reset Both") { engine.resetBoth() }
         }
         .font(.caption)
@@ -419,8 +418,34 @@ struct MenuBarView: View {
         return engine.stopwatchRunning ? "Pause" : "Start"
     }
 
-    private var bothActionLabel: String {
-        engine.delayRemaining != nil && engine.pendingAction == .both ? "Cancel" : "Start Both"
+    /// Four-state label for the single main "Both" button (mirrors the
+    /// per-timer Start/Pause toggle pattern with an added Resume state):
+    /// - "Cancel" during the 3-2-1 delay phase
+    /// - "Pause Both" when at least one timer is running
+    /// - "Resume Both" when stopped with elapsed/remaining state to resume from
+    /// - "Start Both" on a fresh / just-reset state
+    private var mainBothLabel: String {
+        if engine.delayRemaining != nil, engine.pendingAction == .both { return "Cancel" }
+        if engine.countdownRunning || engine.stopwatchRunning { return "Pause Both" }
+        if engine.bothHasResumableState { return "Resume Both" }
+        return "Start Both"
+    }
+
+    private func mainBothAction() {
+        // Cancel during delay: startBoth's first guard handles cancelDelay().
+        if engine.delayRemaining != nil, engine.pendingAction == .both {
+            engine.startBoth()
+            return
+        }
+        if engine.countdownRunning || engine.stopwatchRunning {
+            engine.stopBoth()
+            return
+        }
+        if engine.bothHasResumableState {
+            engine.resumeBoth()
+            return
+        }
+        engine.startBoth()
     }
 
     // MARK: - Helpers

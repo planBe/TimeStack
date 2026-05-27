@@ -142,7 +142,7 @@ final class TimerEngine: ObservableObject {
     static let defaultCountdownColor = Color(red: 0.129, green: 0.129, blue: 0.129)  // #212121
     static let defaultStopwatchColor = Color(red: 0.580, green: 0.067, blue: 0.000)  // #941100
     static let defaultCountdownEndSound = bundledAlarmTag
-    static let defaultSoundPlayCount = 3
+    static let defaultSoundPlayCount = 1
     /// macOS-bundled NSSound names that are present on every install since 10.6.
     static let availableSystemSounds: [String] = [
         "Basso", "Blow", "Bottle", "Frog", "Funk", "Glass", "Hero",
@@ -175,9 +175,9 @@ final class TimerEngine: ObservableObject {
         } else {
             self.stopwatchColor = TimerEngine.defaultStopwatchColor
         }
-        self.soundEnabled = (dict["soundEnabled"] as? Bool) ?? false
+        self.soundEnabled = (dict["soundEnabled"] as? Bool) ?? true
         self.countdownEndSound = (dict["countdownEndSound"] as? String) ?? TimerEngine.defaultCountdownEndSound
-        self.delaySeconds = max(0, min(10, (dict["delaySeconds"] as? Int) ?? 3))
+        self.delaySeconds = max(0, min(10, (dict["delaySeconds"] as? Int) ?? 0))
         self.delayTickEnabled = (dict["delayTickEnabled"] as? Bool) ?? false
         self.customSoundFileName = dict["customSoundFileName"] as? String
         self.customSoundBookmark = dict["customSoundBookmark"] as? Data
@@ -279,6 +279,26 @@ final class TimerEngine: ObservableObject {
         resetStopwatch()
     }
 
+    /// Resumes both timers from their paused state without going through the
+    /// delay-start phase. Counterpart to `stopBoth()` (which acts as pause).
+    /// Safe to call when only one has pause state — the other will start fresh
+    /// from its current values via the same `startCountdownNow` /
+    /// `startStopwatchNow` paths used elsewhere.
+    func resumeBoth() {
+        if delayRemaining != nil { cancelDelay() }
+        startCountdownNow()
+        startStopwatchNow()
+    }
+
+    /// True when at least one timer has paused progress to resume from
+    /// (countdown partially elapsed or stopwatch with non-zero elapsed time).
+    /// Used by the menu's Pause Both / Resume Both label flip.
+    var bothHasResumableState: Bool {
+        let countdownPartial = countdownRemaining > 0 && countdownRemaining < countdownTarget
+        let stopwatchPartial = stopwatchElapsed > 0
+        return countdownPartial || stopwatchPartial
+    }
+
     // MARK: - Sound preview (for the menu's test button)
 
     func previewCurrentSound() {
@@ -311,9 +331,9 @@ final class TimerEngine: ObservableObject {
         precision = 1
         countdownColor = TimerEngine.defaultCountdownColor
         stopwatchColor = TimerEngine.defaultStopwatchColor
-        soundEnabled = false
+        soundEnabled = true
         countdownEndSound = TimerEngine.defaultCountdownEndSound
-        delaySeconds = 3
+        delaySeconds = 0
         delayTickEnabled = false
         customSoundFileName = nil
         customSoundBookmark = nil
