@@ -36,3 +36,8 @@ Pods/
 # — bundled artifacts live under TimeStack/Resources/; these are upstream.
 graphics/
 sounds/
+
+# Release export artifacts — landed at repo root during Distribute App flows;
+# they belong on GitHub Releases or App Store Connect, not in the repo.
+*.app
+*.zip
