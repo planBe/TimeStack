@@ -1,6 +1,6 @@
 # TimeStack Privacy Policy
 
-**Last updated:** 2026-05-25
+**Last updated:** 2026-05-26
 
 ## Summary
 
@@ -25,9 +25,20 @@ TimeStack uses no third-party SDKs, no analytics services, no advertising networ
 
 ## App Sandbox
 
-TimeStack runs inside Apple's App Sandbox with no network entitlements and no file-system entitlements beyond what's required for the system to function. It can only access its own private container.
+TimeStack runs inside Apple's App Sandbox with **no network entitlements**. It cannot make network calls.
 
-When you choose a notification sound, TimeStack plays one of the 14 macOS-bundled system sounds (`/System/Library/Sounds/`) via the standard `NSSound` API. No custom audio files are bundled or downloaded.
+The only file-system entitlement TimeStack uses is `com.apple.security.files.user-selected.read-only`, which is required to support the "Custom…" option in the Sound menu (described below). With this entitlement, TimeStack can read a file ONLY when you explicitly pick that file via the standard macOS Open File dialog — there is no broader file-system access, no scanning, no enumeration.
+
+## Sound playback
+
+When you choose a notification sound, TimeStack plays one of:
+
+- **Alarm** — a short two-tone sound bundled inside the app (no network access required).
+- **Siren** — a Taiwan EAS-style alert tone bundled inside the app (Pixabay-licensed; see the [Credits section of the README](README.md#credits) for attribution).
+- **One of the 14 macOS-bundled system sounds** (`/System/Library/Sounds/`) via the standard `NSSound` API.
+- **A custom audio file you pick yourself** via the "Custom…" menu option. TimeStack stores a sandbox-permitted Security-Scoped Bookmark to that file so the same picked file can play across launches. The file is read only at countdown-end (when you trigger the sound) — never scanned, never sent anywhere, never modified.
+
+If you pick a custom sound and later move or delete the file, TimeStack silently falls back to no sound and you can pick another file via the menu.
 
 ## Children's privacy
 
