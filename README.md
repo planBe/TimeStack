@@ -4,7 +4,7 @@ Free, always-on-top transparent overlay timers for macOS. A stacked **countdown*
 
 ## Status
 
-**v1.0 submitted to the Mac App Store** (2026-05-25, awaiting Apple review). **v1.1 in development** — polish pass adding a bundled Alarm + Siren sound, custom user-sound picker, configurable play count, opt-in delay-start audio tick, and gentle UI scaling at small window sizes.
+**v1.0 submitted to the Mac App Store** (2026-05-25, awaiting Apple review). **v1.1 shipped to GitHub Releases** (2026-05-27) — bundled Alarm + Siren sounds, custom user-sound picker, configurable play count, opt-in delay-start audio tick, gentle UI scaling at small window sizes. **v1.2 in development** — Pause/Resume Both consolidation in the menu, saner first-run defaults, fresh-state overlay sizing fix.
 
 ## Features
 
@@ -15,9 +15,10 @@ Free, always-on-top transparent overlay timers for macOS. A stacked **countdown*
 - 📐 Resizable window with adjustable transparency; text scales with window size
 - 🎨 Per-timer text colors (NSColorPanel for true-color picking)
 - ⌚ Precision picker — whole seconds, tenths, or hundredths
-- 🚦 3-2-1 delay before any Start (0–10s, default 3) — keeps your "get back to the game" hand-eye clean
-- 🔔 Opt-in countdown-end sound — bundled **Alarm** (default, gentle bee-doo), **Siren** (Taiwan EAS-style wail), 14 macOS system sounds, or pick your own audio file
-- 🔁 Play sound Once / 3× / 5× / 10× — any sound becomes alarm-like by repetition
+- ▶️ Both-at-once controls — Start Both starts a fresh run; the same button flips to Pause Both / Resume Both as state changes; Reset Both clears
+- 🔔 Countdown-end sound on by default — bundled **Alarm** (gentle bee-doo), **Siren** (Taiwan EAS-style wail), 14 macOS system sounds, or pick your own audio file
+- 🔁 Play sound Once (default) / 3× / 5× / 10× — any sound becomes alarm-like by repetition
+- 🚦 Optional 3-2-1 delay before any Start (0–10s, off by default; opt in via menu Stepper)
 - 🥁 Opt-in audio tick during the 3-2-1 delay
 - 💾 Window position/size, target time, colors, sound choice — all persist across launches
 - 🍎 Menu bar control (no dock icon)
@@ -58,7 +59,7 @@ Settings persist in `UserDefaults` under `TimeStack.settings.v2`. Multi-monitor 
 - [x] v0.4 — NSColorPanel-based color UI, font scaling, two-window lock architecture, branded menu header
 - [x] v1.0 — submitted to Mac App Store 2026-05-25
 - [x] v1.1 — AccentColor asset, gentle header scaling at small windows, opt-in audio tick during delay, custom user-sound picker (Security-Scoped Bookmarks), bundled Alarm + Siren sounds, play-N-times count semantic
-- [ ] v1.2 — TBD; candidates include in-app Credits surface, optional custom-sound trimming, additional bundled alarm options
+- [ ] v1.2 — Pause/Resume Both consolidation (single label-flipping button + Reset Both), first-run defaults flipped (sound on, Once, delay off), fresh-defaults overlay sizing fix; future: in-app Credits surface, optional custom-sound trimming, additional bundled alarm options
 
 ## Privacy
 
