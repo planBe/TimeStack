@@ -66,6 +66,26 @@ targets:
           - "@executable_path/Frameworks"
           - "@executable_path/../Frameworks"
 
+  # Logic tests. The pure model files are compiled straight into the test
+  # bundle (no TEST_HOST), so `xcodebuild test` never launches the app —
+  # no menu-bar item, no global hotkey, no read/write of real user data.
+  TimeStackTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: TimeStackTests
+      - path: TimeStack/TimeFormatter.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.planbecreative.TimeStackTests
+        # Swift Testing / XCTest dylibs are built for 14.0; tests only, the app stays 13.0.
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_STYLE: Automatic
+        SWIFT_APPROACHABLE_CONCURRENCY: YES
+        SUPPORTED_PLATFORMS: macosx
+        SDKROOT: macosx
+
 schemes:
   TimeStack:
     build:
@@ -75,6 +95,8 @@ schemes:
       config: Debug
     test:
       config: Debug
+      targets:
+        - TimeStackTests
     profile:
       config: Release
     analyze:

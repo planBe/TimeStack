@@ -11,16 +11,19 @@
 		1AEEFA57C0BA87B5CD3E575D /* Siren.m4a in Resources */ = {isa = PBXBuildFile; fileRef = F20D70F051D0A8672991AD10 /* Siren.m4a */; };
 		45341F48EAB829B9327588FA /* ColorWell.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF1BB383CAE3626C33818DD4 /* ColorWell.swift */; };
 		6409DDCD894EA63A00B2B302 /* Alarm.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 727D9EA72061D6FB9A0658D2 /* Alarm.m4a */; };
+		6C898F634734D6E2CC8D69A0 /* TimeFormatterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 101D3F998BAC1894DDFC9A89 /* TimeFormatterTests.swift */; };
 		7591CE49DA754C357EBA1C83 /* TimerPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D95E5F2E56C1BEB547DD2F0 /* TimerPanel.swift */; };
 		917EF092C4EDAC1B97E84604 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9683F58628B70D3CA11ED213 /* Assets.xcassets */; };
 		A9F97589DDE8C6B4996B1385 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA9607F9527C6D1BEAFE8B63 /* MenuBarView.swift */; };
 		AB5506A75B7C5F5EDE5011B0 /* OverlayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDE9E00FB0F133BFEA016A9F /* OverlayController.swift */; };
+		C1C7200AD2ABE706A17F61EA /* TimeFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1809DCADA8144D7E8BDABF66 /* TimeFormatter.swift */; };
 		C4491BE0532903F1BF4FA44A /* OverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67F989C76A0A5412079869C0 /* OverlayView.swift */; };
 		ED33BF1BB5401913CF2D8FC3 /* TimeFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1809DCADA8144D7E8BDABF66 /* TimeFormatter.swift */; };
 		EDF6F7801FE9741113ADBD31 /* TimeStackApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A58B632F2D7DEBC513B8C7B3 /* TimeStackApp.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		101D3F998BAC1894DDFC9A89 /* TimeFormatterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeFormatterTests.swift; sourceTree = "<group>"; };
 		1809DCADA8144D7E8BDABF66 /* TimeFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeFormatter.swift; sourceTree = "<group>"; };
 		4923A1461B24B3041948AF24 /* TimeStack.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TimeStack.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6414A94D6AF0B4A0B3BBEA47 /* TimerEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerEngine.swift; sourceTree = "<group>"; };
@@ -29,6 +32,7 @@
 		9683F58628B70D3CA11ED213 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		9D95E5F2E56C1BEB547DD2F0 /* TimerPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerPanel.swift; sourceTree = "<group>"; };
 		A58B632F2D7DEBC513B8C7B3 /* TimeStackApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeStackApp.swift; sourceTree = "<group>"; };
+		D0F621D60BE107AA8410D692 /* TimeStackTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TimeStackTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		DA9607F9527C6D1BEAFE8B63 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
 		EDE9E00FB0F133BFEA016A9F /* OverlayController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayController.swift; sourceTree = "<group>"; };
 		F20D70F051D0A8672991AD10 /* Siren.m4a */ = {isa = PBXFileReference; path = Siren.m4a; sourceTree = "<group>"; };
@@ -40,6 +44,7 @@
 			isa = PBXGroup;
 			children = (
 				4923A1461B24B3041948AF24 /* TimeStack.app */,
+				D0F621D60BE107AA8410D692 /* TimeStackTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -51,6 +56,14 @@
 				F20D70F051D0A8672991AD10 /* Siren.m4a */,
 			);
 			path = Resources;
+			sourceTree = "<group>";
+		};
+		600F9B24A8BA3D2DEEC40162 /* TimeStackTests */ = {
+			isa = PBXGroup;
+			children = (
+				101D3F998BAC1894DDFC9A89 /* TimeFormatterTests.swift */,
+			);
+			path = TimeStackTests;
 			sourceTree = "<group>";
 		};
 		B47B01B94E080F7BC5BA8D81 /* TimeStack */ = {
@@ -74,6 +87,7 @@
 			isa = PBXGroup;
 			children = (
 				B47B01B94E080F7BC5BA8D81 /* TimeStack */,
+				600F9B24A8BA3D2DEEC40162 /* TimeStackTests */,
 				0BF96CA6BCB291825FCC9516 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -81,6 +95,23 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		02DCBA4C80C3AD4C5FF63BF8 /* TimeStackTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AD9C606E98339360BC4153A9 /* Build configuration list for PBXNativeTarget "TimeStackTests" */;
+			buildPhases = (
+				C38B9BD9B373BE4C16F74F48 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TimeStackTests;
+			packageProductDependencies = (
+			);
+			productName = TimeStackTests;
+			productReference = D0F621D60BE107AA8410D692 /* TimeStackTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		3147583E2EDBEA3FC5B65B3A /* TimeStack */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 667735D986531B00337DFBBA /* Build configuration list for PBXNativeTarget "TimeStack" */;
@@ -108,6 +139,10 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 2650;
 				TargetAttributes = {
+					02DCBA4C80C3AD4C5FF63BF8 = {
+						DevelopmentTeam = X22WKZG6P4;
+						ProvisioningStyle = Automatic;
+					};
 					3147583E2EDBEA3FC5B65B3A = {
 						DevelopmentTeam = X22WKZG6P4;
 						ProvisioningStyle = Automatic;
@@ -129,6 +164,7 @@
 			projectRoot = "";
 			targets = (
 				3147583E2EDBEA3FC5B65B3A /* TimeStack */,
+				02DCBA4C80C3AD4C5FF63BF8 /* TimeStackTests */,
 			);
 		};
 /* End PBXProject section */
@@ -159,6 +195,15 @@
 				EDF6F7801FE9741113ADBD31 /* TimeStackApp.swift in Sources */,
 				17C6DED4936DC5CA5F8D1202 /* TimerEngine.swift in Sources */,
 				7591CE49DA754C357EBA1C83 /* TimerPanel.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C38B9BD9B373BE4C16F74F48 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C1C7200AD2ABE706A17F61EA /* TimeFormatter.swift in Sources */,
+				6C898F634734D6E2CC8D69A0 /* TimeFormatterTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -296,6 +341,26 @@
 			};
 			name = Debug;
 		};
+		9CF913C89D4DF05A2052D4C0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.planbecreative.TimeStackTests;
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+			};
+			name = Debug;
+		};
 		CEAC974A724E85B528E9889D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -372,6 +437,26 @@
 			};
 			name = Release;
 		};
+		E413AD449227F1268E12CF2D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.planbecreative.TimeStackTests;
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -389,6 +474,15 @@
 			buildConfigurations = (
 				CEAC974A724E85B528E9889D /* Debug */,
 				DFC3ECD0BBD1EA0FBD9BFB1C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AD9C606E98339360BC4153A9 /* Build configuration list for PBXNativeTarget "TimeStackTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9CF913C89D4DF05A2052D4C0 /* Debug */,
+				E413AD449227F1268E12CF2D /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

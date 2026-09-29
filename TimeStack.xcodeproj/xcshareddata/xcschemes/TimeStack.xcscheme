@@ -39,6 +39,17 @@
          </BuildableReference>
       </MacroExpansion>
       <Testables>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "02DCBA4C80C3AD4C5FF63BF8"
+               BuildableName = "TimeStackTests.xctest"
+               BlueprintName = "TimeStackTests"
+               ReferencedContainer = "container:TimeStack.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
       <CommandLineArguments>
       </CommandLineArguments>
