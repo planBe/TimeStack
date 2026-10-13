@@ -100,7 +100,11 @@ final class TimerEngine: ObservableObject {
     /// 0 = disabled (immediate start, v0.2 behavior). Range 0–10, default 3.
     @Published var delaySeconds: Int {
         didSet {
-            delaySeconds = max(0, min(10, delaySeconds))
+            // @Published makes this a computed property, so assigning it here re-enters
+            // didSet. Unguarded, every set recursed until the stack overflowed (crash on
+            // any delay change; found 2026-10-13 by the first compiled run of the tests).
+            let clamped = max(0, min(10, delaySeconds))
+            if clamped != delaySeconds { delaySeconds = clamped; return }
             saveSettings()
         }
     }
@@ -118,9 +122,15 @@ final class TimerEngine: ObservableObject {
     // MARK: - Derived display state (read-only externally)
 
     @Published private(set) var countdownRemaining: TimeInterval
-    @Published private(set) var countdownRunning: Bool = false
+    // Every start, pause, reset and finish goes through these two flags, so
+    // their didSet is the one place the display loop is started or stopped.
+    @Published private(set) var countdownRunning: Bool = false {
+        didSet { syncDisplayLoop() }
+    }
     @Published private(set) var stopwatchElapsed: TimeInterval = 0
-    @Published private(set) var stopwatchRunning: Bool = false
+    @Published private(set) var stopwatchRunning: Bool = false {
+        didSet { syncDisplayLoop() }
+    }
 
     // MARK: - Internal tracking
 
@@ -130,12 +140,16 @@ final class TimerEngine: ObservableObject {
     private var stopwatchStartedAt: Date?
     private var stopwatchPausedElapsed: TimeInterval = 0
 
+    /// Non-nil only while at least one timer runs; nothing to redraw otherwise.
     private var displayTimer: Timer?
     /// 50ms tick — fast enough for smooth hundredths display.
     private let displayInterval: TimeInterval = 0.05
 
     private let settingsKey = "TimeStack.settings.v2"
     private let legacyKeyV1 = "TimeStack.settings.v1"
+
+    private let defaults: UserDefaults
+    private let now: () -> Date
 
     // MARK: - Defaults
 
@@ -151,8 +165,13 @@ final class TimerEngine: ObservableObject {
 
     // MARK: - Init
 
-    init() {
+    /// `defaults` and `now` are injectable so unit tests use a throwaway suite
+    /// and a controlled clock. The app uses `.standard` and the real time.
+    init(defaults: UserDefaults = .standard, now: @escaping () -> Date = Date.init) {
+        self.defaults = defaults
+        self.now = now
         let dict = TimerEngine.loadSettingsDict(
+            from: defaults,
             v2Key: "TimeStack.settings.v2",
             v1Key: "TimeStack.settings.v1"
         )
@@ -182,8 +201,8 @@ final class TimerEngine: ObservableObject {
         self.customSoundFileName = dict["customSoundFileName"] as? String
         self.customSoundBookmark = dict["customSoundBookmark"] as? Data
         self.soundPlayCount = max(1, (dict["soundPlayCount"] as? Int) ?? TimerEngine.defaultSoundPlayCount)
-
-        startDisplayLoop()
+        // No display loop yet: both timers start stopped, and the first start
+        // brings it up through the running flags' didSet.
     }
 
     deinit {
@@ -208,7 +227,7 @@ final class TimerEngine: ObservableObject {
             countdownPausedRemaining = countdownTarget
             countdownRemaining = countdownTarget
         }
-        countdownStartedAt = Date()
+        countdownStartedAt = now()
         countdownRunning = true
     }
 
@@ -239,7 +258,7 @@ final class TimerEngine: ObservableObject {
 
     private func startStopwatchNow() {
         guard !stopwatchRunning else { return }
-        stopwatchStartedAt = Date()
+        stopwatchStartedAt = now()
         stopwatchRunning = true
     }
 
@@ -294,6 +313,31 @@ final class TimerEngine: ObservableObject {
     /// (countdown partially elapsed or stopwatch with non-zero elapsed time).
     /// Used by the menu's Pause Both / Resume Both label flip.
     var bothHasResumableState: Bool {
+        TimerEngine.hasResumableState(
+            countdownRemaining: countdownRemaining,
+            countdownTarget: countdownTarget,
+            stopwatchElapsed: stopwatchElapsed
+        )
+    }
+
+    // MARK: - Arithmetic (pure, pinned by TimerEngineTests)
+
+    /// Countdown time left `now` after resuming at `startedAt` with
+    /// `pausedRemaining` on the clock. Goes negative past the end; the caller
+    /// clamps for display and treats ≤ 0 as finished.
+    nonisolated static func countdownLeft(pausedRemaining: TimeInterval, startedAt: Date, now: Date) -> TimeInterval {
+        pausedRemaining - now.timeIntervalSince(startedAt)
+    }
+
+    /// Stopwatch total at `now`: what was banked before the last pause plus
+    /// the time since it resumed at `startedAt`.
+    nonisolated static func stopwatchTotal(pausedElapsed: TimeInterval, startedAt: Date, now: Date) -> TimeInterval {
+        pausedElapsed + now.timeIntervalSince(startedAt)
+    }
+
+    /// A countdown part-way through or a stopwatch with time on it. A finished
+    /// countdown (0) and an untouched one (== target) are not resumable.
+    nonisolated static func hasResumableState(countdownRemaining: TimeInterval, countdownTarget: TimeInterval, stopwatchElapsed: TimeInterval) -> Bool {
         let countdownPartial = countdownRemaining > 0 && countdownRemaining < countdownTarget
         let stopwatchPartial = stopwatchElapsed > 0
         return countdownPartial || stopwatchPartial
@@ -312,8 +356,8 @@ final class TimerEngine: ObservableObject {
     /// assignment fires its didSet → saveSettings, so the final dict reflects
     /// the new defaults.
     func resetToDefaults() {
-        UserDefaults.standard.removeObject(forKey: settingsKey)
-        UserDefaults.standard.removeObject(forKey: legacyKeyV1)
+        defaults.removeObject(forKey: settingsKey)
+        defaults.removeObject(forKey: legacyKeyV1)
 
         cancelDelay()
         countdownStartedAt = nil
@@ -480,18 +524,33 @@ final class TimerEngine: ObservableObject {
 
     // MARK: - Display loop
 
-    private func startDisplayLoop() {
-        displayTimer = Timer.scheduledTimer(withTimeInterval: displayInterval, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                self?.tick()
+    /// Runs the 20 Hz loop only while a timer is running. It used to fire all
+    /// day; idle, tick() changed nothing, so stopping it changes no display.
+    private func syncDisplayLoop() {
+        let needed = countdownRunning || stopwatchRunning
+        if needed, displayTimer == nil {
+            displayTimer = Timer.scheduledTimer(withTimeInterval: displayInterval, repeats: true) { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.tick()
+                }
             }
+        } else if !needed, let timer = displayTimer {
+            timer.invalidate()
+            displayTimer = nil
         }
     }
 
-    private func tick() {
+    /// Read-only, for tests: whether the display loop is scheduled.
+    var displayLoopRunning: Bool { displayTimer != nil }
+
+    /// Internal, not private, so tests can step the display loop by hand
+    /// against an injected clock.
+    func tick() {
+        let date = now()
         if countdownRunning, let startedAt = countdownStartedAt {
-            let elapsedSinceStart = Date().timeIntervalSince(startedAt)
-            let remaining = countdownPausedRemaining - elapsedSinceStart
+            let remaining = TimerEngine.countdownLeft(
+                pausedRemaining: countdownPausedRemaining, startedAt: startedAt, now: date
+            )
             countdownRemaining = max(0, remaining)
             if remaining <= 0 {
                 countdownPausedRemaining = 0
@@ -502,8 +561,9 @@ final class TimerEngine: ObservableObject {
         }
 
         if stopwatchRunning, let startedAt = stopwatchStartedAt {
-            let elapsedSinceStart = Date().timeIntervalSince(startedAt)
-            stopwatchElapsed = stopwatchPausedElapsed + elapsedSinceStart
+            stopwatchElapsed = TimerEngine.stopwatchTotal(
+                pausedElapsed: stopwatchPausedElapsed, startedAt: startedAt, now: date
+            )
         }
     }
 
@@ -532,20 +592,24 @@ final class TimerEngine: ObservableObject {
         if let bookmark = customSoundBookmark {
             dict["customSoundBookmark"] = bookmark
         }
-        UserDefaults.standard.set(dict, forKey: settingsKey)
+        defaults.set(dict, forKey: settingsKey)
     }
 
-    private static func loadSettingsDict(v2Key: String, v1Key: String) -> [String: Any] {
-        if let v2 = UserDefaults.standard.dictionary(forKey: v2Key) {
+    private static func loadSettingsDict(from defaults: UserDefaults, v2Key: String, v1Key: String) -> [String: Any] {
+        if let v2 = defaults.dictionary(forKey: v2Key) {
             return v2
         }
         // Backward-compat: read v1 (v0.1's storage) and migrate forward at first save.
-        return UserDefaults.standard.dictionary(forKey: v1Key) ?? [:]
+        return defaults.dictionary(forKey: v1Key) ?? [:]
     }
 }
 
 // MARK: - Color ↔ hex persistence helpers
 
+// Explicit @MainActor here and on SoundReplayDelegate matches the app
+// target's default isolation, so this file compiles the same way in the
+// test bundle (which has no default isolation). No change for the app.
+@MainActor
 extension Color {
     init?(hex: String) {
         let stripped = hex.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -573,6 +637,7 @@ extension Color {
 /// enclosing engine must hold a strong reference to this object for the
 /// full playback duration — otherwise the delegate deallocates and replay
 /// silently stops at the first finish callback.
+@MainActor
 final class SoundReplayDelegate: NSObject, NSSoundDelegate {
     private var remaining: Int
     private let onAllDone: (NSSound) -> Void

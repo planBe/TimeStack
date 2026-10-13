@@ -75,6 +75,7 @@ targets:
     sources:
       - path: TimeStackTests
       - path: TimeStack/TimeFormatter.swift
+      - path: TimeStack/TimerEngine.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.planbecreative.TimeStackTests
