@@ -247,7 +247,7 @@ final class TimerEngine: ObservableObject {
 
     /// Adds `seconds` to the countdown's time remaining, whether it's
     /// running or paused — a one-off nudge (e.g. the media "previous track"
-    /// key bound to +15s). Does not change `countdownTarget`, so a reset
+    /// key bound to +10s). Does not change `countdownTarget`, so a reset
     /// still returns to the originally configured duration. `countdownRemaining`
     /// is bumped directly (not just `countdownPausedRemaining`) so the
     /// overlay reflects the addition immediately instead of waiting for the
