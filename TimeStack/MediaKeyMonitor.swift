@@ -1,8 +1,8 @@
 import MediaPlayer
 
 /// Claims the system's "Now Playing" media-key routing so TimeStack
-/// receives the hardware Play/Pause and "⏮ / <<" back-track keys, even
-/// while backgrounded.
+/// receives the hardware Play/Pause, "⏮ / <<" back-track, and "⏭ / >>"
+/// next-track keys, even while backgrounded.
 ///
 /// Raw `NSEvent.systemDefined` monitoring (the original approach) doesn't
 /// reliably reach apps that aren't frontmost or registered as the active
@@ -17,7 +17,11 @@ import MediaPlayer
 final class MediaKeyMonitor {
     private let commandCenter = MPRemoteCommandCenter.shared()
 
-    init(onPlayPause: @escaping () -> Void, onPrevious: @escaping () -> Void) {
+    init(
+        onPlayPause: @escaping () -> Void,
+        onPrevious: @escaping () -> Void,
+        onNext: @escaping () -> Void
+    ) {
         MPNowPlayingInfoCenter.default().nowPlayingInfo = [
             MPMediaItemPropertyTitle: "TimeStack",
         ]
@@ -44,6 +48,11 @@ final class MediaKeyMonitor {
         commandCenter.previousTrackCommand.isEnabled = true
         commandCenter.previousTrackCommand.addTarget { _ in
             Task { @MainActor in onPrevious() }
+            return .success
+        }
+        commandCenter.nextTrackCommand.isEnabled = true
+        commandCenter.nextTrackCommand.addTarget { _ in
+            Task { @MainActor in onNext() }
             return .success
         }
     }

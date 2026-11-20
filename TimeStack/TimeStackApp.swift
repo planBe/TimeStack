@@ -31,7 +31,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         }
 
         // Media keys: Play/Pause toggles the countdown (mirrors the menu's
-        // Start/Pause button); the "<<" back-track key adds 10s to it.
+        // Start/Pause button); "<<" back-track adds 10s; ">>" next-track
+        // stops the countdown and resets it to its configured duration.
         mediaKeyMonitor = MediaKeyMonitor(
             onPlayPause: { [weak engine] in
                 guard let engine else { return }
@@ -43,6 +44,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             },
             onPrevious: { [weak engine] in
                 engine?.addCountdownTime(10)
+            },
+            onNext: { [weak engine] in
+                engine?.resetCountdown()
             }
         )
     }
