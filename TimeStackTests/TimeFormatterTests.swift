@@ -5,10 +5,10 @@ import Testing
 /// case by case.
 struct TimeFormatterTests {
 
-    @Test("Whole seconds: MM:SS under an hour, H:MM:SS from an hour")
+    @Test("Whole seconds: M:SS under an hour, H:MM:SS from an hour")
     func wholeSeconds() {
-        #expect(TimeFormatter.format(0, precision: 0) == "00:00")
-        #expect(TimeFormatter.format(59, precision: 0) == "00:59")
+        #expect(TimeFormatter.format(0, precision: 0) == "0:00")
+        #expect(TimeFormatter.format(59, precision: 0) == "0:59")
         #expect(TimeFormatter.format(20 * 60, precision: 0) == "20:00")
         #expect(TimeFormatter.format(3599, precision: 0) == "59:59")
         #expect(TimeFormatter.format(3600, precision: 0) == "1:00:00")
@@ -17,22 +17,22 @@ struct TimeFormatterTests {
 
     @Test("Negative intervals clamp to zero")
     func negative() {
-        #expect(TimeFormatter.format(-5, precision: 0) == "00:00")
-        #expect(TimeFormatter.format(-0.01, precision: 2) == "00:00.00")
+        #expect(TimeFormatter.format(-5, precision: 0) == "0:00")
+        #expect(TimeFormatter.format(-0.01, precision: 2) == "0:00.00")
     }
 
     @Test("Tenths and hundredths truncate rather than round up")
     func truncation() {
-        #expect(TimeFormatter.format(0.99, precision: 1) == "00:00.9")
-        #expect(TimeFormatter.format(59.999, precision: 2) == "00:59.99")
-        #expect(TimeFormatter.format(1.05, precision: 1) == "00:01.0")
+        #expect(TimeFormatter.format(0.99, precision: 1) == "0:00.9")
+        #expect(TimeFormatter.format(59.999, precision: 2) == "0:59.99")
+        #expect(TimeFormatter.format(1.05, precision: 1) == "0:01.0")
     }
 
     /// Regression: values like 12.34 are stored as 12.3399999… in binary
     /// floating point, and the pre-2026-09-28 formatter displayed "12.33".
     @Test("Decimal values display their own digits", arguments: [
-        (0.29, "00:00.29"), (0.57, "00:00.57"), (1.15, "00:01.15"),
-        (12.34, "00:12.34"), (0.3, "00:00.30"), (3599.99, "59:59.99"),
+        (0.29, "0:00.29"), (0.57, "0:00.57"), (1.15, "0:01.15"),
+        (12.34, "0:12.34"), (0.3, "0:00.30"), (3599.99, "59:59.99"),
     ])
     func floatingPointRepresentation(value: Double, expected: String) {
         #expect(TimeFormatter.format(value, precision: 2) == expected)
@@ -40,7 +40,7 @@ struct TimeFormatterTests {
 
     @Test("Precision 1 is the default")
     func defaultPrecision() {
-        #expect(TimeFormatter.format(83.46) == "01:23.4")
+        #expect(TimeFormatter.format(83.46) == "1:23.4")
     }
 
     /// Regression (second pass, 2026-09-29): the first fix nudged only the
@@ -48,9 +48,9 @@ struct TimeFormatterTests {
     /// 12.9999999…) clamped to "12.99" instead of reading "13.00", and the
     /// seconds digit disagreed with the hundredths.
     @Test("A hair under a whole second reads as that second", arguments: [
-        (13.0 - 1e-9, 2, "00:13.00"), (13.0 - 1e-9, 1, "00:13.0"),
-        (60.0 - 1e-9, 0, "01:00"), (3600.0 - 1e-9, 2, "1:00:00.00"),
-        (0.1 + 0.2, 1, "00:00.3"), (0.7 + 0.1, 2, "00:00.80"),
+        (13.0 - 1e-9, 2, "0:13.00"), (13.0 - 1e-9, 1, "0:13.0"),
+        (60.0 - 1e-9, 0, "1:00"), (3600.0 - 1e-9, 2, "1:00:00.00"),
+        (0.1 + 0.2, 1, "0:00.3"), (0.7 + 0.1, 2, "0:00.80"),
     ])
     func floatingPointBoundary(value: Double, precision: Int, expected: String) {
         #expect(TimeFormatter.format(value, precision: precision) == expected)

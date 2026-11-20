@@ -9,8 +9,9 @@ struct OverlayView: View {
             // Font fits BOTH width and height budgets — pick whichever is more
             // constraining so the timer text always fits the card without
             // clipping. Width budget: "00:00.0" is 7 chars at monospaced width
-            // ≈ 0.6× the font size, plus card chrome. Height budget: each card
-            // gets ~half the window height (minus chrome), and text is ~55%
+            // ≈ 0.6× the font size (worst case; the leading minute digit may
+            // be absent, e.g. "0:00.0"), plus card chrome. Height budget:
+            // each card gets ~half the window height (minus chrome), and text is ~55%
             // of card height after the header.
             let visibleCount = max(1, (engine.countdownVisible ? 1 : 0) + (engine.stopwatchVisible ? 1 : 0))
             let outerChrome: CGFloat = 32  // .padding(10) + .padding(6) doubled
