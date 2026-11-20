@@ -108,6 +108,24 @@ final class OverlayController: NSObject, ObservableObject, NSWindowDelegate {
         positionLockWindow()
     }
 
+    /// Hides the overlay (and its lock-corner companion) without destroying
+    /// the window — called when the user closes the last visible timer via
+    /// its × button, so the overlay disappears instead of showing an empty
+    /// "both timers hidden" placeholder card. Re-showing a timer from the
+    /// menu calls `showWindow()`, which just re-orders this same window
+    /// front; the frame, aspect, and content are untouched.
+    func hideWindow() {
+        window?.orderOut(nil)
+        lockWindow?.orderOut(nil)
+    }
+
+    /// Re-shows a window previously hidden by `hideWindow()`.
+    func showWindow() {
+        window?.orderFrontRegardless()
+        lockWindow?.orderFrontRegardless()
+        positionLockWindow()
+    }
+
     // MARK: - Internal
 
     var window: NSPanel?

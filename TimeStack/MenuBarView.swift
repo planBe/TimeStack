@@ -52,12 +52,15 @@ struct MenuBarView: View {
         alert.addButton(withTitle: "Reset")
         alert.addButton(withTitle: "Cancel")
         guard alert.runModal() == .alertFirstButtonReturn else { return }
-        // Resize window FIRST to both-visible aspect (reset restores both),
-        // then mutate engine + overlay state. Same race-free ordering as the
-        // visibility toggles.
-        overlay.updateAspectAndSize(for: 2)
+        // Resize window FIRST to the post-reset aspect (reset restores
+        // countdown-only — stopwatch defaults to hidden), then mutate engine
+        // + overlay state. Same race-free ordering as the visibility
+        // toggles. Always ends with the window shown: a reset should never
+        // leave the overlay in whatever hidden state it was in before.
+        overlay.updateAspectAndSize(for: 1)
         engine.resetToDefaults()
         overlay.resetToDefaults()
+        overlay.showWindow()
     }
 
     // MARK: - Branding header
@@ -378,6 +381,11 @@ struct MenuBarView: View {
     /// window dimensions and content lays out correctly. (Standard
     /// `$engine.countdownVisible` would mutate first → SwiftUI re-renders
     /// against old window size → content clips when window resizes after.)
+    /// Also explicitly shows/hides the overlay window here — rather than
+    /// relying on the overlay's own view reacting to the published change —
+    /// since AppKit can pause processing updates for an occluded/ordered-out
+    /// window's content, which would leave a "Show" toggle unable to bring a
+    /// previously-closed overlay back.
     private var countdownVisibleBinding: Binding<Bool> {
         Binding(
             get: { engine.countdownVisible },
@@ -385,6 +393,7 @@ struct MenuBarView: View {
                 let count = (newValue ? 1 : 0) + (engine.stopwatchVisible ? 1 : 0)
                 overlay.updateAspectAndSize(for: count)
                 engine.countdownVisible = newValue
+                if count > 0 { overlay.showWindow() } else { overlay.hideWindow() }
             }
         )
     }
@@ -396,6 +405,7 @@ struct MenuBarView: View {
                 let count = (engine.countdownVisible ? 1 : 0) + (newValue ? 1 : 0)
                 overlay.updateAspectAndSize(for: count)
                 engine.stopwatchVisible = newValue
+                if count > 0 { overlay.showWindow() } else { overlay.hideWindow() }
             }
         )
     }

@@ -44,6 +44,7 @@ struct OverlayView: View {
     private func syncWindowAspect() {
         let count = (engine.countdownVisible ? 1 : 0) + (engine.stopwatchVisible ? 1 : 0)
         overlay.updateAspectAndSize(for: count)
+        if count > 0 { overlay.showWindow() }
     }
 
     private var contentBody: some View {
@@ -102,15 +103,23 @@ struct OverlayView: View {
     /// GeometryReader reads the new window dimensions on its re-render and
     /// content lays out correctly. (Reversing the order — mutate then
     /// resize — leaves GeometryReader reading stale OLD dimensions and
-    /// content gets clipped.)
+    /// content gets clipped.) If this closes the LAST visible timer, hide
+    /// the overlay window entirely instead of leaving an empty placeholder
+    /// card on screen — called explicitly here (rather than via `.onChange`
+    /// inside this same, about-to-be-hidden view) since AppKit can pause
+    /// processing updates for an occluded/ordered-out window's content.
     private func hideCountdown() {
-        overlay.updateAspectAndSize(for: engine.stopwatchVisible ? 1 : 0)
+        let stopwatchOnly = engine.stopwatchVisible ? 1 : 0
+        overlay.updateAspectAndSize(for: stopwatchOnly)
         engine.countdownVisible = false
+        if stopwatchOnly == 0 { overlay.hideWindow() }
     }
 
     private func hideStopwatch() {
-        overlay.updateAspectAndSize(for: engine.countdownVisible ? 1 : 0)
+        let countdownOnly = engine.countdownVisible ? 1 : 0
+        overlay.updateAspectAndSize(for: countdownOnly)
         engine.stopwatchVisible = false
+        if countdownOnly == 0 { overlay.hideWindow() }
     }
 
     /// Stopwatch panel's time-area override: shows the big delay digit when a delay-start
