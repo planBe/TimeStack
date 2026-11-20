@@ -245,6 +245,18 @@ final class TimerEngine: ObservableObject {
         countdownRemaining = countdownTarget
     }
 
+    /// Adds `seconds` to the countdown's time remaining, whether it's
+    /// running or paused — a one-off nudge (e.g. the media "previous track"
+    /// key bound to +15s). Does not change `countdownTarget`, so a reset
+    /// still returns to the originally configured duration. `countdownRemaining`
+    /// is bumped directly (not just `countdownPausedRemaining`) so the
+    /// overlay reflects the addition immediately instead of waiting for the
+    /// next display-loop tick while running.
+    func addCountdownTime(_ seconds: TimeInterval) {
+        countdownPausedRemaining += seconds
+        countdownRemaining += seconds
+    }
+
     // MARK: - Stopwatch control
 
     func startStopwatch() {

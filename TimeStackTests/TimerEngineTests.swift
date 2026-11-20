@@ -103,6 +103,29 @@ struct TimerEngineTests {
         #expect(engine.countdownRemaining == 60)
     }
 
+    @Test("Adding countdown time nudges remaining immediately, paused or running, without touching the target")
+    func addCountdownTime() {
+        let (engine, clock, _) = makeEngine()
+
+        // Paused: both remaining and the paused baseline move together.
+        engine.addCountdownTime(15)
+        #expect(engine.countdownRemaining == 75)
+        #expect(engine.countdownTarget == 60)
+
+        // Running: the addition holds up across a subsequent tick, since
+        // tick() re-derives remaining from the same nudged baseline.
+        engine.startCountdown()
+        clock.advance(5)
+        engine.tick()
+        #expect(engine.countdownRemaining == 70)
+
+        engine.addCountdownTime(15)
+        #expect(engine.countdownRemaining == 85)
+        clock.advance(5)
+        engine.tick()
+        #expect(engine.countdownRemaining == 80)
+    }
+
     @Test("Stopwatch counts, holds while paused, resumes, and resets to zero")
     func stopwatchPauseResume() {
         let (engine, clock, _) = makeEngine()
