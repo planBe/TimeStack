@@ -176,14 +176,14 @@ final class TimerEngine: ObservableObject {
             v1Key: "TimeStack.settings.v1"
         )
 
-        let target = (dict["countdownTarget"] as? TimeInterval) ?? 1200
+        let target = (dict["countdownTarget"] as? TimeInterval) ?? 180
         self.countdownTarget = target
         self.countdownRemaining = target
         self.countdownPausedRemaining = target
         self.countdownVisible = (dict["countdownVisible"] as? Bool) ?? true
-        self.stopwatchVisible = (dict["stopwatchVisible"] as? Bool) ?? true
+        self.stopwatchVisible = (dict["stopwatchVisible"] as? Bool) ?? false
 
-        self.precision = (dict["precision"] as? Int) ?? 1
+        self.precision = (dict["precision"] as? Int) ?? 0
         if let hex = dict["countdownColorHex"] as? String, let color = Color(hex: hex) {
             self.countdownColor = color
         } else {
@@ -367,12 +367,12 @@ final class TimerEngine: ObservableObject {
         stopwatchElapsed = 0
         stopwatchRunning = false
 
-        countdownTarget = 1200
-        countdownPausedRemaining = 1200
-        countdownRemaining = 1200
+        countdownTarget = 180
+        countdownPausedRemaining = 180
+        countdownRemaining = 180
         countdownVisible = true
-        stopwatchVisible = true
-        precision = 1
+        stopwatchVisible = false
+        precision = 0
         countdownColor = TimerEngine.defaultCountdownColor
         stopwatchColor = TimerEngine.defaultStopwatchColor
         soundEnabled = true

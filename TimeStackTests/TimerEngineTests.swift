@@ -268,9 +268,9 @@ struct TimerEngineTests {
         engine.resetToDefaults()
         #expect(!engine.countdownRunning && !engine.stopwatchRunning)
         #expect(engine.stopwatchElapsed == 0)
-        #expect(engine.countdownRemaining == 1200)
-        #expect(engine.precision == 1)
+        #expect(engine.countdownRemaining == 180)
+        #expect(engine.precision == 0)
         #expect(d.dictionary(forKey: "TimeStack.settings.v1") == nil)
-        #expect(d.dictionary(forKey: "TimeStack.settings.v2")?["precision"] as? Int == 1)
+        #expect(d.dictionary(forKey: "TimeStack.settings.v2")?["precision"] as? Int == 0)
     }
 }
