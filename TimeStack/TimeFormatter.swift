@@ -19,7 +19,7 @@ enum TimeFormatter {
 
         let base = hours > 0
             ? String(format: "%d:%02d:%02d", hours, minutes, seconds)
-            : String(format: "%02d:%02d", minutes, seconds)
+            : String(format: "%d:%02d", minutes, seconds)
 
         let fraction = total.truncatingRemainder(dividingBy: 1)
 

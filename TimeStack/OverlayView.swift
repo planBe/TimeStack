@@ -8,22 +8,25 @@ struct OverlayView: View {
         GeometryReader { geo in
             // Font fits BOTH width and height budgets — pick whichever is more
             // constraining so the timer text always fits the card without
-            // clipping. Width budget: "00:00.0" is 7 chars at monospaced width
-            // ≈ 0.6× the font size, plus card chrome. Height budget: each card
+            // clipping. Width budget: times are assumed under 10 minutes, so
+            // "M:SS" (4 chars) is the worst case at monospaced width ≈ 0.6×
+            // the font size, plus card chrome. Height budget: each card
             // gets ~half the window height (minus chrome), and text is ~55%
             // of card height after the header.
             let visibleCount = max(1, (engine.countdownVisible ? 1 : 0) + (engine.stopwatchVisible ? 1 : 0))
             let outerChrome: CGFloat = 32  // .padding(10) + .padding(6) doubled
-            let widthBudget = max(0, geo.size.width - outerChrome - 28) / 4.2
+            let widthBudget = max(0, geo.size.width - outerChrome - 28) / 2.4
             let cardHeight = max(0, (geo.size.height - outerChrome - 10 * CGFloat(visibleCount - 1)) / CGFloat(visibleCount))
-            // Card chrome (post v0.4-tight): TimerPanel .padding(.vertical, 4)
-            // × 2 + header (≤14pt cap) + spacing (~2pt) = ~24pt. Divide by 1.2
-            // to account for monospaced text's intrinsic line-height — without
-            // this multiplier, SwiftUI's .minimumScaleFactor kicks in to
-            // shrink the displayed text below the nominal font size. Header
-            // is dynamic per TimerPanel's `fontSize * 0.20` clamped [9,14] —
-            // budget uses the 14pt cap as the conservative worst case.
-            let heightBudget = max(0, cardHeight - 24) / 1.2
+            // Card chrome (tightened for v1.2): TimerPanel .padding(.vertical, 2)
+            // × 2 + header (≤14pt cap) + spacing (~1pt) = ~19pt — down from the
+            // old 4pt vertical padding + 2pt spacing, so more of the card's
+            // height budget goes to the digits instead of chrome. Divide by
+            // 1.2 to account for monospaced text's intrinsic line-height —
+            // without this multiplier, SwiftUI's .minimumScaleFactor kicks in
+            // to shrink the displayed text below the nominal font size.
+            // Header is dynamic per TimerPanel's `fontSize * 0.20` clamped
+            // [9,14] — budget uses the 14pt cap as the conservative worst case.
+            let heightBudget = max(0, cardHeight - 19) / 1.2
             // Floor at 28pt: at small windows the time stays glance-readable.
             // Header gently shrinks toward 9pt at the floor (~3:1 hierarchy),
             // grows toward 14pt at large fontSize (~20:1 for max readability).
@@ -43,6 +46,7 @@ struct OverlayView: View {
     private func syncWindowAspect() {
         let count = (engine.countdownVisible ? 1 : 0) + (engine.stopwatchVisible ? 1 : 0)
         overlay.updateAspectAndSize(for: count)
+        if count > 0 { overlay.showWindow() }
     }
 
     private var contentBody: some View {
@@ -101,15 +105,23 @@ struct OverlayView: View {
     /// GeometryReader reads the new window dimensions on its re-render and
     /// content lays out correctly. (Reversing the order — mutate then
     /// resize — leaves GeometryReader reading stale OLD dimensions and
-    /// content gets clipped.)
+    /// content gets clipped.) If this closes the LAST visible timer, hide
+    /// the overlay window entirely instead of leaving an empty placeholder
+    /// card on screen — called explicitly here (rather than via `.onChange`
+    /// inside this same, about-to-be-hidden view) since AppKit can pause
+    /// processing updates for an occluded/ordered-out window's content.
     private func hideCountdown() {
-        overlay.updateAspectAndSize(for: engine.stopwatchVisible ? 1 : 0)
+        let stopwatchOnly = engine.stopwatchVisible ? 1 : 0
+        overlay.updateAspectAndSize(for: stopwatchOnly)
         engine.countdownVisible = false
+        if stopwatchOnly == 0 { overlay.hideWindow() }
     }
 
     private func hideStopwatch() {
-        overlay.updateAspectAndSize(for: engine.countdownVisible ? 1 : 0)
+        let countdownOnly = engine.countdownVisible ? 1 : 0
+        overlay.updateAspectAndSize(for: countdownOnly)
         engine.stopwatchVisible = false
+        if countdownOnly == 0 { overlay.hideWindow() }
     }
 
     /// Stopwatch panel's time-area override: shows the big delay digit when a delay-start
