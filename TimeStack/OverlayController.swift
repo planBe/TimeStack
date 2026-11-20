@@ -35,7 +35,7 @@ final class OverlayController: NSObject, ObservableObject, NSWindowDelegate {
         isLocked = false
 
         if let window {
-            let defaultSize = CGSize(width: 320, height: 280)
+            let defaultSize = CGSize(width: 240, height: 280)
             let frame: CGRect = {
                 guard let screen = NSScreen.main else {
                     return CGRect(origin: CGPoint(x: 100, y: 100), size: defaultSize)
@@ -70,11 +70,14 @@ final class OverlayController: NSObject, ObservableObject, NSWindowDelegate {
         // needing SwiftUI's .minimumScaleFactor to shrink it. Width follows
         // the aspect to keep minSize consistent with aspectRatio (otherwise
         // they fight and the window resolves to an in-between shape).
+        // Width narrowed for v1.2: times are assumed under 10 minutes, so
+        // "M:SS" (4 chars) is the only width budget that needs to fit —
+        // down from the old 7-char "00:00.0" assumption.
         let (w, h, minW, minH): (CGFloat, CGFloat, CGFloat, CGFloat) = {
             switch visibleCount {
-            case 2: return (8, 5, 260, 160)
-            case 1: return (8, 3, 240, 90)
-            default: return (8, 3, 240, 90)  // empty state matches 1-card size
+            case 2: return (6, 5, 195, 160)
+            case 1: return (6, 3, 180, 90)
+            default: return (6, 3, 180, 90)  // empty state matches 1-card size
             }
         }()
         let aspect = NSSize(width: w, height: h)
@@ -159,19 +162,20 @@ final class OverlayController: NSObject, ObservableObject, NSWindowDelegate {
         panel.ignoresMouseEvents = isLocked
         panel.alphaValue = alpha
 
-        // Initial size limits assume both timers visible (8:5 aspect). Sized
-        // so the 28pt time-text floor fits cleanly. OverlayView's .onAppear
-        // calls updateAspectAndSize() which re-applies the correct aspect/
-        // min/max if the saved state has a timer hidden — or if the saved
-        // frame is below the current minimums (e.g., from an earlier version).
-        let minSize = NSSize(width: 260, height: 160)
-        let maxSize = NSSize(width: 1440, height: 900)
+        // Initial size limits assume both timers visible (6:5 aspect, narrowed
+        // for v1.2's 4-char "M:SS" width budget). Sized so the 28pt time-text
+        // floor fits cleanly. OverlayView's .onAppear calls updateAspectAndSize()
+        // which re-applies the correct aspect/min/max if the saved state has a
+        // timer hidden — or if the saved frame is below the current minimums
+        // (e.g., from an earlier version).
+        let minSize = NSSize(width: 195, height: 160)
+        let maxSize = NSSize(width: 1440, height: 1200)
         panel.minSize = minSize
         panel.maxSize = maxSize
         panel.contentMinSize = minSize
         panel.contentMaxSize = maxSize
-        panel.contentAspectRatio = NSSize(width: 8, height: 5)
-        panel.aspectRatio = NSSize(width: 8, height: 5)
+        panel.contentAspectRatio = NSSize(width: 6, height: 5)
+        panel.aspectRatio = NSSize(width: 6, height: 5)
 
         // CRITICAL: assign self.window BEFORE mounting SwiftUI content —
         // OverlayView's .onAppear fires during contentView assignment and
@@ -249,10 +253,11 @@ final class OverlayController: NSObject, ObservableObject, NSWindowDelegate {
     /// otherwise centers a default-sized panel on the main screen. Handles the
     /// monitor-unplugged case so the overlay never lands invisibly off-screen.
     private func preferredInitialFrame() -> CGRect {
-        // 8:5 aspect to match the both-visible default; comfortably above the
-        // 260x160 minSize so a fresh-defaults launch lands at a usable
-        // working size rather than the cramped minimum.
-        let defaultSize = CGSize(width: 480, height: 300)
+        // 6:5 aspect to match the both-visible default (narrowed for v1.2's
+        // 4-char width budget); comfortably above the 195x160 minSize so a
+        // fresh-defaults launch lands at a usable working size rather than
+        // the cramped minimum.
+        let defaultSize = CGSize(width: 360, height: 300)
         if let saved = loadSavedFrame(), isFrameVisible(saved) {
             return saved
         }
