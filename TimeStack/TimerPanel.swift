@@ -21,7 +21,7 @@ struct TimerPanel: View {
         // scale proportionally so the row reads as one cohesive element.
         let headerSize = min(14, max(9, fontSize * 0.20))
         let dotSize = headerSize * 0.55
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 1) {
             HStack(spacing: 6) {
                 Circle()
                     .fill(isRunning ? tint : .secondary.opacity(0.5))
@@ -55,7 +55,7 @@ struct TimerPanel: View {
             }
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 4)
+        .padding(.vertical, 2)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(adaptiveCardBackground, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
