@@ -19,6 +19,7 @@ struct TimeStackApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     let engine = TimerEngine()
     let overlay = OverlayController()
+    private var mediaKeyMonitor: MediaKeyMonitor?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let engine = self.engine
@@ -27,6 +28,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             OverlayView()
                 .environmentObject(engine)
                 .environmentObject(overlay)
+        }
+
+        // Media Play/Pause toggles the countdown — mirrors the menu's
+        // Start/Pause button exactly.
+        mediaKeyMonitor = MediaKeyMonitor { [weak engine] in
+            guard let engine else { return }
+            if engine.countdownRunning {
+                engine.stopCountdown()
+            } else {
+                engine.startCountdown()
+            }
         }
     }
 }
